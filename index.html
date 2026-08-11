@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS Persiapan Pernikahan v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        .view-section { display: none; }
+        .active-view { display: block; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- ============ LAYAR UTAMA ============ -->
+    <div id="app-view" class="flex h-screen overflow-hidden">
+
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-teal-800 text-white flex flex-col h-full shadow-2xl relative z-10">
+            <div class="p-6 border-b border-teal-700">
+                <h1 class="text-2xl font-bold tracking-wider">LMS NIKAH</h1>
+            </div>
+
+            <!-- Info Akun -->
+            <div class="p-6 border-b border-teal-700 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-teal-200 flex items-center justify-center text-teal-800 font-bold text-xl" id="avatar-letter">A</div>
+                <div>
+                    <p class="font-semibold text-sm" id="user-name">Peserta</p>
+                    <p class="text-teal-300 text-xs">Calon Pengantin</p>
+                </div>
+            </div>
+
+            <!-- Menu Navigasi -->
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <button onclick="navigate('dashboard-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 bg-teal-700 hover:bg-teal-600 transition">
+                    <span>📊</span> <span>Dasbor Pembelajaran</span>
+                </button>
+                <button onclick="navigate('history-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                    <span>📝</span> <span>Riwayat Nilai</span>
+                </button>
+                <button onclick="navigate('article-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                    <span>📚</span> <span>Artikel Edukasi</span>
+                </button>
+                <div id="sidebar-admin" class="hidden">
+                    <a href="admin.html" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                        <span>🛡️</span> <span>Panel Admin</span>
+                    </a>
+                </div>
+                <div class="pt-4 mt-4 border-t border-teal-700">
+                    <button id="btn-side-cert" onclick="navigate('certificate-view')" disabled class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-400 cursor-not-allowed transition">
+                        <span>🎓</span> <span id="text-side-cert">Sertifikat (Terkunci)</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="p-4 border-t border-teal-700">
+                <button onclick="handleLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition text-sm font-semibold">Keluar Aplikasi</button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative">
+            <div class="p-8 max-w-6xl mx-auto pb-20">
+
+                <!-- VIEW: DASBOR -->
+                <section id="dashboard-view" class="view-section active-view fade-in">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">Perjalanan Persiapan Pernikahan</h2>
+                            <p class="text-gray-500 mt-1">Selesaikan seluruh kurikulum untuk melihat tingkat kesiapan Anda.</p>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Kesiapan -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-600 mb-1">Status Kesiapan Menikah</h3>
+                            <div id="readiness-status" class="inline-block px-3 py-1 bg-gray-200 text-gray-700 font-bold rounded-full text-sm">
+                                Belum Ada Data
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 mb-1">Skor Rata-rata Kesiapan</p>
+                            <p class="text-5xl font-bold text-teal-600" id="readiness-score">0%</p>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-8">
+                        <div class="flex justify-between text-sm font-bold text-gray-600 mb-2">
+                            <span>Progres Keseluruhan</span>
+                            <span id="overall-progress-text">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div id="overall-progress-bar" class="bg-teal-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div id="timeline-container" class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 relative">
+                        <div class="absolute left-[39px] top-8 bottom-8 w-1 bg-gray-200 z-0"></div>
+                        <div id="session-timeline" class="space-y-8 relative z-10"></div>
+                    </div>
+
+                    <!-- Dasbor Lulus -->
+                    <div id="completed-dashboard" class="hidden text-center bg-gradient-to-r from-teal-500 to-green-500 text-white p-12 rounded-2xl shadow-lg mt-8">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h2 class="text-4xl font-bold mb-4">Selamat! Anda 100% Siap</h2>
+                        <p class="text-lg mb-8">Anda telah menyelesaikan seluruh kurikulum bimbingan pranikah dengan sangat baik.</p>
+                        <button onclick="navigate('certificate-view')" class="bg-white text-teal-700 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 shadow-md transition transform hover:scale-105">
+                            Unduh Sertifikat Resmi
+                        </button>
+                    </div>
+                </section>
+
+                <!-- VIEW: RIWAYAT NILAI -->
+                <section id="history-view" class="view-section fade-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Riwayat Nilai & Evaluasi</h2>
+                    <p class="text-gray-600 mb-8">Rekapitulasi nilai Pre-Test dan Post-Test dari sesi yang telah Anda selesaikan.</p>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-teal-50 text-teal-800 border-b border-teal-200">
+                                    <th class="p-4 font-semibold">Sesi Pembelajaran</th>
+                                    <th class="p-4 font-semibold text-center">Skor Pre-Test</th>
+                                    <th class="p-4 font-semibold text-center">Skor Post-Test</th>
+                                    <th class="p-4 font-semibold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- VIEW: ARTIKEL -->
+                <section id="article-view" class="view-section fade-in">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Artikel Edukasi Tambahan</h2>
+                    <div id="article-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </section>
+
+                <!-- VIEW: PRE-TEST -->
+                <section id="pretest-view" class="view-section fade-in max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-10">
+                    <h2 class="text-2xl font-bold mb-2 text-teal-700" id="pretest-title">Pre-Test</h2>
+                    <p class="mb-6 text-gray-500 border-b pb-4">Soal evaluasi awal (Wajib dijawab untuk melihat materi)</p>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <p class="font-semibold mb-3">1. Menurut Anda, apa tantangan terbesar di tahun pertama pernikahan?</p>
+                            <label class="flex items-center space-x-3 mb-2 cursor-pointer"><input type="radio" name="q1" class="form-radio h-5 w-5 text-teal-600"> <span>Masalah finansial</span></label>
+                            <label class="flex items-center space-x-3 cursor-pointer"><input type="radio" name="q1" class="form-radio h-5 w-5 text-teal-600"> <span>Penyesuaian kebiasaan harian</span></label>
+                        </div>
+                    </div>
+
+                    <button onclick="startMaterial()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-bold transition">Kirim Pre-Test & Mulai Sesi</button>
+                </section>
+
+                <!-- VIEW: MATERI -->
+                <section id="material-view" class="view-section fade-in max-w-4xl mx-auto">
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200 mb-6 mt-6">
+                        <h2 class="text-3xl font-bold mb-6 text-gray-800" id="material-title">Materi Sesi</h2>
+
+                        <div id="video-area" class="bg-slate-800 w-full aspect-video rounded-lg flex flex-col items-center justify-center text-white mb-8 shadow-inner">
+                            <span class="text-4xl mb-2">▶</span>
+                            <span>Video Edukasi</span>
+                            <span class="text-xs text-gray-400 mt-2">Tunggu sebentar...</span>
+                        </div>
+
+                        <div class="prose max-w-none text-gray-700 leading-relaxed">
+                            <h3 class="text-xl font-bold mb-4 text-teal-800">Pemahaman Inti Sesi Ini</h3>
+                            <p class="mb-4" id="material-desk">Materi komprehensif disediakan di sini. Peserta diwajibkan untuk membaca dan memahami konteks yang diberikan karena akan menjadi acuan utama pada post-test.</p>
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800" id="material-watch-note">
+                                <strong>Perhatian:</strong> Tombol Post-Test di bagian bawah layar akan terkunci hingga durasi minimum pembelajaran Anda tercapai.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl shadow-lg border border-teal-100 flex justify-between items-center sticky bottom-6 z-50">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl">⏱</div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase">Sisa Waktu Belajar</p>
+                                <p id="timer-display" class="text-xl font-mono font-bold text-red-600">15:00</p>
+                            </div>
+                        </div>
+                        <button id="btn-posttest" onclick="startPostTest()" disabled class="bg-gray-300 text-gray-500 px-8 py-3 rounded-lg font-bold cursor-not-allowed transition duration-300">
+                            Menunggu Waktu...
+                        </button>
+                    </div>
+                </section>
+
+                <!-- VIEW: POST-TEST -->
+                <section id="posttest-view" class="view-section fade-in max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-10">
+                    <h2 class="text-2xl font-bold mb-2 text-teal-700" id="posttest-title">Post-Test</h2>
+                    <p class="mb-6 text-gray-500 border-b pb-4">Uji pemahaman akhir materi. Nilai ini akan menentukan kesiapan Anda.</p>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="bg-gray-50 p-4 rounded border">
+                            <p class="font-semibold mb-3">1. Apa langkah yang paling tepat jika terjadi perselisihan pendapat?</p>
+                            <label class="flex items-center space-x-3 mb-2 cursor-pointer"><input type="radio" name="q2" class="form-radio h-5 w-5 text-teal-600"> <span>Mendiamkan pasangan</span></label>
+                            <label class="flex items-center space-x-3 cursor-pointer"><input type="radio" name="q2" class="form-radio h-5 w-5 text-teal-600"> <span>Mencari waktu tenang untuk diskusi logis</span></label>
+                        </div>
+                    </div>
+
+                    <button onclick="processFinishSession()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-bold transition">Selesaikan Sesi & Lihat Hasil</button>
+                </section>
+
+                <!-- VIEW: SERTIFIKAT -->
+                <section id="certificate-view" class="view-section fade-in text-center pt-10">
+                    <div id="cert-box" class="max-w-4xl mx-auto bg-white p-12 rounded-sm shadow-2xl border-[12px] border-double border-teal-800 relative">
+                        <div class="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-yellow-500"></div>
+                        <div class="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-yellow-500"></div>
+
+                        <h4 class="text-gray-500 tracking-[0.3em] uppercase text-sm mb-4">Sertifikat Resmi</h4>
+                        <h1 class="text-5xl font-serif text-teal-900 mb-8 font-bold">Bimbingan Persiapan Pernikahan</h1>
+
+                        <p class="text-gray-600 mb-2">Diberikan secara membanggakan kepada:</p>
+                        <h2 class="text-4xl font-bold text-gray-800 my-6 border-b border-gray-300 inline-block px-12 pb-2" id="cert-name">Peserta</h2>
+
+                        <p class="text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                            Telah menyelesaikan seluruh rangkaian kurikulum, ujian evaluasi, dan dinilai <strong class="text-teal-700">Sangat Layak & Siap</strong> untuk mengarungi bahtera rumah tangga.
+                        </p>
+
+                        <div class="flex justify-between px-16 mt-16 text-gray-700">
+                            <div class="text-center">
+                                <div class="w-40 border-b-2 border-gray-800 mb-2"></div>
+                                <p class="font-bold">Direktur Lembaga</p>
+                            </div>
+                            <div class="w-24 h-24 border-4 border-red-600 rounded-full flex items-center justify-center text-red-600 font-bold -mt-8 rotate-12 opacity-80">
+                                LULUS<br>SAH
+                            </div>
+                            <div class="text-center">
+                                <div class="w-40 border-b-2 border-gray-800 mb-2"></div>
+                                <p class="font-bold">Fasilitator</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 space-x-4">
+                        <button onclick="window.print()" class="bg-teal-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-teal-700 shadow">Cetak / Simpan PDF</button>
+                        <button onclick="navigate('dashboard-view')" class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-bold hover:bg-gray-300 shadow">Kembali</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==================== INIT SUPABASE ====================
+        const supabase = window.supabase.createClient(
+            window.SUPABASE_URL,
+            window.SUPABASE_KEY
+        );
+
+        // ==================== STATE DATA ====================
+        const sessionsData = [
+            "Membangun Visi & Misi Keluarga",
+            "Manajemen Konflik & Komunikasi",
+            "Kesehatan Reproduksi & Genetik",
+            "Perencanaan Finansial Rumah Tangga",
+            "Hukum Pernikahan & Administrasi KUA",
+            "Psikologi Suami & Istri",
+            "Ilmu Dasar Pengasuhan Anak (Parenting)",
+            "Spiritualitas & Etika Berkeluarga"
+        ];
+
+        let state = {
+            user: null,
+            userSessions: [],   // data perjalanan_sesi milik user
+            profile: {},        // profil user
+            isAdmin: false,
+            materi: {},         // map sesi_num -> materi
+            artikel: [],        // daftar artikel
+            templateSertif: null,
+            currentUnlocked: 1,
+            totalSessions: 8,
+            activeSessionId: null,
+            timerInterval: null,
+            preScore: 0
+        };
+
+        // ==================== AUTH ====================
+        async function handleLogout() {
+            clearInterval(state.timerInterval);
+            await supabase.auth.signOut();
+            state.user = null;
+            state.userSessions = [];
+            state.profile = {};
+            window.location.href = "login.html";
+        }
+
+        // ==================== PROFIL ====================
+        async function upsertProfile(nama) {
+            const { error } = await supabase
+                .from('profil')
+                .upsert({ user_id: state.user.id, nama: nama || state.profile.nama || 'Peserta' });
+            if (error) console.error('upsert profil error:', error.message);
+        }
+
+        // ==================== LOAD DATA USER ====================
+        async function loadUserData() {
+            // Profil
+            const { data: prof, error: profErr } = await supabase
+                .from('profil')
+                .select('*')
+                .eq('user_id', state.user.id)
+                .maybeSingle();
+            if (!profErr && prof) {
+                state.profile = prof;
+            } else if (!prof) {
+                const nama = localStorage.getItem('pending_name') || 'Peserta';
+                state.profile = { user_id: state.user.id, nama: nama, jml_sesi: 8, is_admin: false };
+                await upsertProfile(nama);
+                localStorage.removeItem('pending_name');
+            } else {
+                state.profile = { user_id: state.user.id, nama: 'Peserta', jml_sesi: 8, is_admin: false };
+            }
+
+            state.isAdmin = !!state.profile.is_admin;
+
+            // Muat materi (konten sesi dari DB)
+            const { data: mats } = await supabase.from('materi').select('*');
+            (mats || []).forEach(m => { state.materi[m.sesi_num] = m; });
+
+            // Muat artikel
+            const { data: arts } = await supabase.from('artikel').select('*').order('created_at', { ascending: false });
+            state.artikel = arts || [];
+
+            // Muat template sertifikat yang aktif
+            const { data: tpl } = await supabase.from('sertifikat_template').select('*').eq('aktif', true).limit(1).maybeSingle();
+            state.templateSertif = tpl || null;
+
+            // Sessions milik user
+            const { data: sessions, error } = await supabase
+                .from('perjalanan_sesi')
+                .select('*')
+                .eq('user_id', state.user.id);
+            if (!error) state.userSessions = sessions;
+            else console.error('load sessions error:', error.message);
+
+            // Hitung sesi yang terbuka: 1 + jumlah sesi yang sudah diselesaikan
+            const finished = state.userSessions.filter(s => s.status === 'selesai').length;
+            state.currentUnlocked = Math.min(finished + 1, state.totalSessions + 1);
+        }
+
+        // ==================== TAMPILKAN APLIKASI ====================
+        function enterApp() {
+            // Tampilkan profil
+            const nama = state.profile.nama || 'Peserta';
+            document.getElementById('user-name').innerText = nama;
+            document.getElementById('avatar-letter').innerText = nama.charAt(0).toUpperCase();
+            document.getElementById('cert-name').innerText = nama;
+
+            // Tampilkan menu admin jika is_admin
+            if (state.isAdmin) {
+                document.getElementById('sidebar-admin').classList.remove('hidden');
+            }
+
+            navigate('dashboard-view');
+        }
+
+        // ==================== NAVIGASI ====================
+        function navigate(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+
+            if (viewId === 'dashboard-view') renderDashboard();
+            if (viewId === 'history-view') renderHistory();
+            if (viewId === 'article-view') renderArtikel();
+            if (viewId === 'certificate-view') renderSertifikat();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==================== ARTIKEL ====================
+        function renderArtikel() {
+            const grid = document.getElementById('article-grid');
+            grid.innerHTML = '';
+            if (!state.artikel || state.artikel.length === 0) {
+                grid.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-8">Belum ada artikel.</p>';
+                return;
+            }
+            state.artikel.forEach(a => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer";
+                card.innerHTML = `
+                    ${a.gambar_url ? `<img src="${esc(a.gambar_url)}" class="w-full h-40 object-cover rounded-lg mb-3">` : ''}
+                    <span class="text-xs font-bold text-teal-600 bg-teal-100 px-2 py-1 rounded">${esc(a.kategori)}</span>
+                    <h3 class="text-xl font-bold mt-3 mb-2">${esc(a.judul)}</h3>
+                    <p class="text-gray-600 text-sm">${esc(a.isi)}</p>`;
+                grid.appendChild(card);
+            });
+        }
+
+        // ==================== SERTIFIKAT ====================
+        function renderSertifikat() {
+            const box = document.getElementById('cert-box');
+            if (state.templateSertif && state.templateSertif.gambar_url) {
+                box.style.backgroundImage = `url('${state.templateSertif.gambar_url}')`;
+                box.style.backgroundSize = "cover";
+                box.style.backgroundPosition = "center";
+            } else {
+                box.style.backgroundImage = '';
+            }
+        }
+
+        function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        // ==================== DASBOR ====================
+        function renderDashboard() {
+            const unf = state.currentUnlocked;
+            const progressPercent = Math.min(((unf - 1) / state.totalSessions) * 100, 100);
+            document.getElementById('overall-progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('overall-progress-text').innerText = `${Math.round(progressPercent)}%`;
+
+            // Skor kesiapan dari rata-rata post-test
+            const finished = state.userSessions.filter(s => s.status === 'selesai' && s.post_score != null);
+            let readinessScore = 0;
+            let statusEl = document.getElementById('readiness-status');
+            let scoreEl = document.getElementById('readiness-score');
+
+            if (finished.length > 0) {
+                const total = finished.reduce((a, s) => a + s.post_score, 0);
+                readinessScore = Math.round(total / finished.length);
+                scoreEl.innerText = `${readinessScore}%`;
+
+                if (progressPercent === 100 && readinessScore >= 80) {
+                    statusEl.innerText = "SIAP NIKAH";
+                    statusEl.className = "inline-block px-3 py-1 bg-green-100 text-green-700 font-bold rounded-full text-sm border border-green-200";
+                    scoreEl.className = "text-5xl font-bold text-green-600";
+                } else if (progressPercent === 100 && readinessScore < 80) {
+                    statusEl.innerText = "LULUS BERSYARAT (Perlu Review)";
+                    statusEl.className = "inline-block px-3 py-1 bg-yellow-100 text-yellow-700 font-bold rounded-full text-sm border border-yellow-200";
+                } else {
+                    statusEl.innerText = "PROSES BELAJAR";
+                    statusEl.className = "inline-block px-3 py-1 bg-blue-100 text-blue-700 font-bold rounded-full text-sm border border-blue-200";
+                }
+            } else {
+                statusEl.innerText = "Belum Ada Data";
+                statusEl.className = "inline-block px-3 py-1 bg-gray-200 text-gray-700 font-bold rounded-full text-sm";
+                scoreEl.innerText = "0%";
+                scoreEl.className = "text-5xl font-bold text-teal-600";
+            }
+
+            // Timeline
+            const timelineContainer = document.getElementById('session-timeline');
+            timelineContainer.innerHTML = '';
+
+            for (let i = 1; i <= state.totalSessions; i++) {
+                const sesi = state.userSessions.find(s => s.sesi_num === i);
+                const isFinished = sesi && sesi.status === 'selesai';
+                const isCurrent = i === state.currentUnlocked;
+                const isLocked = i > state.currentUnlocked;
+
+                let dotClass = isFinished ? "bg-green-500 border-green-200" :
+                               isCurrent ? "bg-teal-500 border-teal-200 ring-4 ring-teal-100" :
+                               "bg-gray-300 border-white";
+
+                let cardClass = isFinished ? "bg-white border-l-4 border-green-500" :
+                                isCurrent ? "bg-white border-l-4 border-teal-500 shadow-md transform hover:-translate-y-1 transition" :
+                                "bg-gray-50 border-l-4 border-gray-300 opacity-60";
+
+                let buttonHtml = '';
+                if (isCurrent) {
+                    buttonHtml = `<button onclick="startSession(${i})" class="mt-4 bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-sm transition">Mulai Sesi ${i}</button>`;
+                } else if (isFinished) {
+                    const score = sesi.post_score != null ? sesi.post_score : '-';
+                    buttonHtml = `<div class="mt-4 inline-block bg-green-50 text-green-700 px-3 py-1 rounded text-sm font-semibold border border-green-100">Selesai (Skor: ${score})</div>`;
+                } else {
+                    buttonHtml = `<div class="mt-4 text-sm text-gray-400 font-semibold flex items-center">🔒 Terkunci</div>`;
+                }
+
+                const item = document.createElement('div');
+                item.className = "flex items-start group relative";
+                item.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full border-4 ${dotClass} z-10 flex items-center justify-center mt-4">
+                        ${isFinished ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
+                    </div>
+                    <div class="ml-6 w-full p-6 rounded-xl ${cardClass}">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Modul ${i}</p>
+                        <h4 class="text-xl font-bold text-gray-800">${(state.materi[i] && state.materi[i].judul) || sessionsData[i-1]}</h4>
+                        ${buttonHtml}
+                    </div>
+                `;
+                timelineContainer.appendChild(item);
+            }
+
+            // Dasbor lulus + buka sertifikat
+            if (state.currentUnlocked > state.totalSessions) {
+                document.getElementById('timeline-container').classList.add('hidden');
+                document.getElementById('completed-dashboard').classList.remove('hidden');
+
+                const certBtn = document.getElementById('btn-side-cert');
+                certBtn.disabled = false;
+                certBtn.classList.remove('text-gray-400', 'cursor-not-allowed');
+                certBtn.classList.add('text-yellow-400', 'hover:bg-teal-700');
+                document.getElementById('text-side-cert').innerText = "Unduh Sertifikat";
+            }
+        }
+
+        // ==================== RIWAYAT NILAI ====================
+        function renderHistory() {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+
+            const finished = state.userSessions.filter(s => s.status === 'selesai');
+            if (finished.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Belum ada tes yang diselesaikan.</td></tr>`;
+                return;
+            }
+
+            finished.sort((a, b) => a.sesi_num - b.sesi_num).forEach(item => {
+                const passStatus = item.post_score >= 80
+                    ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">LULUS</span>'
+                    : '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">REMEDIAL</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-100 hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="p-4">
+                        <p class="font-bold text-gray-800">Sesi ${item.sesi_num}</p>
+                        <p class="text-xs text-gray-500">${item.sesi_title}</p>
+                    </td>
+                    <td class="p-4 text-center text-gray-600 font-mono">${item.pre_score ?? '-'}</td>
+                    <td class="p-4 text-center font-bold text-gray-800 font-mono">${item.post_score ?? '-'}</td>
+                    <td class="p-4 text-center">${passStatus}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ==================== ALUR BELAJAR ====================
+        async function startSession(id) {
+            const m = state.materi[id] || {};
+            const judul = m.judul || sessionsData[id-1];
+            // Pastikan ada baris sesi di DB dengan status 'berjalan'
+            const existing = state.userSessions.find(s => s.sesi_num === id);
+            if (!existing) {
+                const { data, error } = await supabase
+                    .from('perjalanan_sesi')
+                    .insert({ user_id: state.user.id, sesi_num: id, sesi_title: judul, status: 'berjalan' })
+                    .select()
+                    .single();
+                if (!error) state.userSessions.push(data);
+            }
+            state.activeSessionId = id;
+            document.getElementById('pretest-title').innerText = `Pre-Test: Sesi ${id}`;
+            navigate('pretest-view');
+        }
+
+        function startMaterial() {
+            const id = state.activeSessionId;
+            const m = state.materi[id] || {};
+            const judul = m.judul || sessionsData[id-1];
+            document.getElementById('material-title').innerText = `Sesi ${id}: ${judul}`;
+
+            const videoArea = document.getElementById('video-area');
+            const vurl = m.video_url || '';
+            if (vurl) {
+                const embed = toEmbedUrl(vurl);
+                videoArea.innerHTML = embed
+                    ? `<iframe class="w-full h-full rounded-lg" src="${esc(embed)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+                    : placeholderVideo('Link video tidak dikenali.');
+            } else {
+                videoArea.innerHTML = placeholderVideo('Belum ada video untuk sesi ini.');
+            }
+
+            document.getElementById('material-desk').innerText = m.deskripsi || 'Materi komprehensif disediakan di sini. Baca dan pahami sebelum mengerjakan post-test.';
+
+            navigate('material-view');
+            runAntiSkipTimer();
+        }
+
+        function toEmbedUrl(url) {
+            if (!url) return null;
+            // Sudah embed URL
+            if (url.includes('/embed/')) return url;
+            const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/);
+            if (yt) return 'https://www.youtube.com/embed/' + yt[1];
+            return null;
+        }
+
+        function placeholderVideo(txt) {
+            return `<span class="text-4xl mb-2">▶</span><span>${esc(txt)}</span><span class="text-xs text-gray-400 mt-2">Admin dapat menempel link YouTube di Panel Admin.</span>`;
+        }
+
+        function runAntiSkipTimer() {
+            const btn = document.getElementById('btn-posttest');
+            const display = document.getElementById('timer-display');
+
+            btn.disabled = true;
+            btn.innerText = "Menunggu Waktu...";
+            btn.className = "bg-gray-300 text-gray-500 px-8 py-3 rounded-lg font-bold cursor-not-allowed transition duration-300";
+            display.classList.remove('text-green-600');
+            display.classList.add('text-red-600');
+            clearInterval(state.timerInterval);
+
+            // SIMULASI DEMO: 4 detik (di aslinya jadi 15 * 60)
+            let timeRemaining = 4;
+
+            const updateDisplay = () => {
+                let m = Math.floor(timeRemaining / 60);
+                let s = timeRemaining % 60;
+                display.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            };
+            updateDisplay();
+
+            state.timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateDisplay();
+                if (timeRemaining <= 0) {
+                    clearInterval(state.timerInterval);
+                    display.innerText = "SELESAI";
+                    display.classList.replace('text-red-600', 'text-green-600');
+
+                    btn.disabled = false;
+                    btn.innerText = "Lanjut Post-Test ➔";
+                    btn.className = "bg-teal-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-teal-700 shadow-md transition duration-300 transform hover:scale-105";
+                }
+            }, 1000);
+        }
+
+        function startPostTest() {
+            document.getElementById('posttest-title').innerText = `Post-Test: Sesi ${state.activeSessionId}`;
+            navigate('posttest-view');
+        }
+
+        async function processFinishSession() {
+            // Simulasi nilai acak
+            const randomPre = Math.floor(Math.random() * (70 - 50 + 1)) + 50;
+            const randomPost = Math.floor(Math.random() * (100 - 80 + 1)) + 80;
+
+            const id = state.activeSessionId;
+            // Upsert hasil ke DB
+            const { data, error } = await supabase
+                .from('perjalanan_sesi')
+                .upsert({
+                    user_id: state.user.id,
+                    sesi_num: id,
+                    sesi_title: (state.materi[id] && state.materi[id].judul) || sessionsData[id-1],
+                    pre_score: randomPre,
+                    post_score: randomPost,
+                    status: 'selesai',
+                    selesai_at: new Date().toISOString()
+                }, { onConflict: 'user_id,sesi_num' })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('simpan hasil error:', error.message);
+                alert("Gagal menyimpan ke database: " + error.message);
+                return;
+            }
+
+            // Update state lokal
+            const idx = state.userSessions.findIndex(s => s.sesi_num === id);
+            if (idx >= 0) state.userSessions[idx] = data;
+            else state.userSessions.push(data);
+
+            // Buka kunci sesi berikutnya
+            const finished = state.userSessions.filter(s => s.status === 'selesai').length;
+            state.currentUnlocked = Math.min(finished + 1, state.totalSessions + 1);
+
+            navigate('dashboard-view');
+        }
+
+        // ==================== INIT ====================
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                state.user = session.user;
+                await loadUserData();
+                enterApp();
+            } else {
+                // Tidak ada sesi -> arahkan ke halaman login
+                window.location.href = "login.html";
+            }
+        };
+    </script>
+</body>
+</html>

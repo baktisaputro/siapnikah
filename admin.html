@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin — LMS Persiapan Pernikahan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        .tabpane { display: none; }
+        .tabpane.active { display: block; }
+        .spinner { width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .badge-admin { background:#f59e0b; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden">
+
+    <!-- LAYAR CEK / LOGIN ADMIN -->
+    <div id="gate-view" class="min-h-screen flex items-center justify-center bg-gray-800 p-6 w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
+            <div class="w-14 h-14 mx-auto rounded-full bg-teal-800 text-white flex items-center justify-center text-2xl mb-4">🛡️</div>
+            <h2 class="text-xl font-bold text-gray-800">Panel Admin</h2>
+            <p class="text-sm text-gray-500 mt-1 mb-6">Menunggu verifikasi akses...</p>
+            <div id="gate-msg" class="hidden mb-4 p-3 rounded-lg text-sm font-semibold"></div>
+            <div id="gate-loading" class="flex items-center justify-center text-gray-500"><span class="spinner"></span> &nbsp; Memeriksa...</div>
+            <button id="btn-gate-back" onclick="location.href='login.html'" class="hidden mt-4 w-full bg-gray-200 text-gray-700 py-2.5 rounded-lg font-bold hover:bg-gray-300 transition">Kembali ke Login</button>
+        </div>
+    </div>
+
+    <!-- PANEL ADMIN -->
+    <div id="panel-view" class="hidden flex h-screen overflow-hidden w-full">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col h-full">
+            <div class="p-6 border-b border-gray-800">
+                <h1 class="text-xl font-bold tracking-wider">🛡️ ADMIN LMS</h1>
+                <p class="text-xs text-gray-400 mt-1" id="admin-name">Admin</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <button onclick="showTab('dash')" data-tab="dash" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📊 <span>Dasbor</span></button>
+                <button onclick="showTab('peserta')" data-tab="peserta" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">👥 <span>Peserta</span></button>
+                <button onclick="showTab('materi')" data-tab="materi" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📚 <span>Materi</span></button>
+                <button onclick="showTab('artikel')" data-tab="artikel" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📝 <span>Artikel</span></button>
+                <button onclick="showTab('sertifikat')" data-tab="sertifikat" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">🎓 <span>Template Sertifikat</span></button>
+                <button onclick="location.href='index.html'" class="w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">👁️ <span>Lihat App Peserta</span></button>
+            </nav>
+            <div class="p-4 border-t border-gray-800">
+                <button onclick="handleLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-bold transition">Keluar</button>
+            </div>
+        </aside>
+
+        <!-- Konten -->
+        <main class="flex-1 h-full overflow-y-auto p-8">
+            <!-- DASBOR -->
+            <section id="pane-dash" class="tabpane active">
+                <h2 class="text-2xl font-bold mb-6">Dasbor Admin</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-sm border p-5"><p class="text-sm text-gray-500">Total Peserta</p><p id="stat-peserta" class="text-3xl font-bold text-teal-600">-</p></div>
+                    <div class="bg-white rounded-xl shadow-sm border p-5"><p class="text-sm text-gray-500">Sesi Terselesaikan</p><p id="stat-selesai" class="text-3xl font-bold text-teal-600">-</p></div>
+                    <div class="bg-white rounded-xl shadow-sm border p-5"><p class="text-sm text-gray-500">Artikel</p><p id="stat-artikel" class="text-3xl font-bold text-teal-600">-</p></div>
+                    <div class="bg-white rounded-xl shadow-sm border p-5"><p class="text-sm text-gray-500">Template Aktif</p><p id="stat-sertif" class="text-3xl font-bold text-teal-600">-</p></div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 text-sm text-yellow-800">
+                    <strong>Panduan:</strong> Kelola peserta, isi materi 8 sesi (termasuk embed video), tulis artikel, dan upload template background sertifikat yang menjadi goal kelulusan.
+                </div>
+            </section>
+
+            <!-- PESERTA -->
+            <section id="pane-peserta" class="tabpane">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold">Manajemen Peserta</h2>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border p-5 mb-5">
+                    <h3 class="font-bold mb-3">➕ Buat Akun Peserta Baru</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input id="np-nama" placeholder="Nama Lengkap" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <input id="np-email" type="email" placeholder="Email" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <input id="np-pass" type="password" placeholder="Password (min 6)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <button onclick="createPeserta()" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-bold">Buat Peserta</button>
+                    </div>
+                    <div id="np-msg" class="mt-3 text-sm font-semibold"></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead><tr class="bg-gray-50 border-b">
+                            <th class="p-3">Nama</th>
+                            <th class="p-3">Email</th>
+                            <th class="p-3 text-center">Sesi</th>
+                            <th class="p-3 text-center">Admin</th>
+                            <th class="p-3 text-center">Aksi</th>
+                        </tr></thead>
+                        <tbody id="tbl-peserta"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- MATERI -->
+            <section id="pane-materi" class="tabpane">
+                <h2 class="text-2xl font-bold mb-4">Kelola Materi & Video (8 Sesi)</h2>
+                <p class="text-sm text-gray-500 mb-4">Tempel <strong>URL embed video</strong> (mis. YouTube: <code>https://www.youtube.com/embed/ID</code>) dan tulis materi untuk tiap sesi.</p>
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4" id="materi-list">
+                    <!-- di-render JS -->
+                </div>
+            </section>
+
+            <!-- ARTIKEL -->
+            <section id="pane-artikel" class="tabpane">
+                <h2 class="text-2xl font-bold mb-4">Kelola Artikel</h2>
+                <div class="bg-white rounded-xl shadow-sm border p-5 mb-5">
+                    <h3 class="font-bold mb-3">➕ Tambah / Edit Artikel</h3>
+                    <input id="art-id" type="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <input id="art-judul" placeholder="Judul artikel" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <input id="art-kategori" placeholder="Kategori (mis. Keuangan)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <input id="art-gambar" type="file" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                    </div>
+                    <textarea id="art-isi" rows="4" placeholder="Isi artikel..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="saveArtikel()" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-5 py-2 text-sm font-bold">Simpan Artikel</button>
+                        <button onclick="resetArtikelForm()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg px-4 py-2 text-sm font-bold">Reset</button>
+                    </div>
+                    <div id="art-msg" class="mt-2 text-sm font-semibold"></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead><tr class="bg-gray-50 border-b"><th class="p-3">Judul</th><th class="p-3">Kategori</th><th class="p-3 text-center">Aksi</th></tr></thead>
+                        <tbody id="tbl-artikel"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SERTIFIKAT -->
+            <section id="pane-sertifikat" class="tabpane">
+                <h2 class="text-2xl font-bold mb-2">Template Sertifikat</h2>
+                <p class="text-sm text-gray-500 mb-5">Upload gambar <strong>background sertifikat</strong>. Nama peserta akan ditimpakan di atasnya. Aktifkan satu template sebagai goal kelulusan.</p>
+                <div class="bg-white rounded-xl shadow-sm border p-5 mb-5">
+                    <h3 class="font-bold mb-3">➕ Upload Template Baru</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input id="sf-nama" placeholder="Nama template (mis. Sertifikat v2)" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <input id="sf-file" type="file" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                        <button onclick="uploadTemplate()" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-bold">Upload</button>
+                    </div>
+                    <div id="sf-msg" class="mt-3 text-sm font-semibold"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="tpl-list"><!-- di-render JS --></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+        let adminEmail = null;
+
+        // ============ GATE / AUTH ============
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { rejectAccess("Silakan masuk dulu."); return; }
+            // cek is_admin
+            const { data: prof, error } = await supabase.from('profil').select('*').eq('user_id', session.user.id).maybeSingle();
+            if (error || !prof || !prof.is_admin) { rejectAccess("Akses ditolak. Anda bukan admin."); return; }
+            adminEmail = session.user.email;
+            document.getElementById('admin-name').innerText = prof.nama + " (Admin)";
+            document.getElementById('gate-view').classList.add('hidden');
+            document.getElementById('panel-view').classList.remove('hidden');
+            loadAll();
+        }
+
+        function rejectAccess(msg) {
+            document.getElementById('gate-loading').classList.add('hidden');
+            const m = document.getElementById('gate-msg');
+            m.classList.remove('hidden');
+            m.className = "mb-4 p-3 rounded-lg text-sm font-semibold bg-red-50 text-red-700 border border-red-200";
+            m.innerText = msg;
+            document.getElementById('btn-gate-back').classList.remove('hidden');
+        }
+
+        async function handleLogout() {
+            await supabase.auth.signOut();
+            location.href = "login.html";
+        }
+
+        function showTab(name) {
+            document.querySelectorAll('.tabpane').forEach(p => p.classList.remove('active'));
+            document.getElementById('pane-' + name).classList.add('active');
+            document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('bg-gray-800'));
+            const btn = document.querySelector(`.tabbtn[data-tab="${name}"]`);
+            if (btn) btn.classList.add('bg-gray-800');
+            loadTab(name);
+        }
+
+        // ============ LOAD ALL ============
+        async function loadAll() { loadTab('dash'); loadTab('peserta'); loadTab('artikel'); loadTab('materi'); loadTab('sertifikat'); }
+
+        async function loadTab(name) {
+            if (name==='dash') loadDash();
+            if (name==='peserta') loadPeserta();
+            if (name==='artikel') loadArtikelList();
+            if (name==='materi') loadMateri();
+            if (name==='sertifikat') loadTemplate();
+        }
+
+        // ============ DASH ============
+        async function loadDash() {
+            const { count: cProf } = await supabase.from('profil').select('*', { count: 'exact', head: true });
+            document.getElementById('stat-peserta').innerText = cProf ?? 0;
+            const { data: sesi } = await supabase.from('perjalanan_sesi').select('*').eq('status','selesai');
+            document.getElementById('stat-selesai').innerText = sesi ? sesi.length : 0;
+            const { count: cArt } = await supabase.from('artikel').select('*', { count: 'exact', head: true });
+            document.getElementById('stat-artikel').innerText = cArt ?? 0;
+            const { data: tpl } = await supabase.from('sertifikat_template').select('*').eq('aktif', true);
+            document.getElementById('stat-sertif').innerText = tpl ? tpl.length : 0;
+        }
+
+        // ============ PESERTA ============
+        async function loadPeserta() {
+            const { data: list } = await supabase.from('profil').select('*');
+            const tbody = document.getElementById('tbl-peserta');
+            tbody.innerHTML = '';
+            if (!list || list.length===0) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada peserta.</td></tr>'; return; }
+            for (const p of list) {
+                const { count: selesai } = await supabase.from('perjalanan_sesi').select('*', { count:'exact', head:true }).eq('user_id', p.user_id).eq('status','selesai');
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold">${esc(p.nama)}</td>
+                    <td class="p-3 text-gray-500">${esc(p.user_id)}</td>
+                    <td class="p-3 text-center">${selesai}/8</td>
+                    <td class="p-3 text-center">${p.is_admin ? '<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700">ADMIN</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500">peserta</span>'}</td>
+                    <td class="p-3 text-center space-x-2">
+                        ${!p.is_admin ? `<button onclick="toggleAdmin('${p.user_id}',true)" class="text-xs text-amber-600 hover:underline">Jadikan Admin</button>` : `<button onclick="toggleAdmin('${p.user_id}',false)" class="text-xs text-gray-500 hover:underline">Cabut Admin</button>`}
+                        <button onclick="hapusPeserta('${p.user_id}')" class="text-xs text-red-600 hover:underline">Hapus</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            }
+        }
+
+        async function createPeserta() {
+            const nama = document.getElementById('np-nama').value.trim();
+            const email = document.getElementById('np-email').value.trim();
+            const pass = document.getElementById('np-pass').value;
+            const msg = document.getElementById('np-msg');
+            if (!nama || !email || !pass) { msg.className = "mt-3 text-sm font-semibold text-red-600"; msg.innerText = "Lengkapi semua field."; return; }
+            const { data, error } = await supabase.auth.signUp({ email, password: pass });
+            if (error) { msg.className="mt-3 text-sm font-semibold text-red-600"; msg.innerText = error.message; return; }
+            // buat profil
+            await supabase.from('profil').upsert({ user_id: data.user.id, nama: nama });
+            msg.className = "mt-3 text-sm font-semibold text-green-600";
+            msg.innerText = "Peserta " + nama + " berhasil dibuat.";
+            document.getElementById('np-nama').value=''; document.getElementById('np-email').value=''; document.getElementById('np-pass').value='';
+            loadPeserta(); loadDash();
+        }
+
+        async function toggleAdmin(uid, val) {
+            await supabase.from('profil').update({ is_admin: val }).eq('user_id', uid);
+            loadPeserta(); loadDash();
+        }
+
+        async function hapusPeserta(uid) {
+            if (!confirm("Hapus peserta ini? Akun pengguna juga akan dihapus.")) return;
+            // hapus baris profil & sesi lalu user
+            await supabase.from('perjalanan_sesi').delete().eq('user_id', uid);
+            await supabase.from('profil').delete().eq('user_id', uid);
+            if (confirm("Profil & progres terhapus. Lanjut hapus akun auth (perlu izin admin Supabase)?")) {
+                alert("Penghapusan akun auth butuh Data API/Management. Hapus manual di Supabase > Authentication > Users jika perlu.");
+            }
+            loadPeserta(); loadDash();
+        }
+
+        // ============ MATERI ============
+        async function loadMateri() {
+            const { data: list } = await supabase.from('materi').select('*').order('sesi_num');
+            const map = {}; (list||[]).forEach(m => map[m.sesi_num] = m);
+            const container = document.getElementById('materi-list');
+            container.innerHTML = '';
+            const titles = ["Membangun Visi & Misi Keluarga","Manajemen Konflik & Komunikasi","Kesehatan Reproduksi & Genetik","Perencanaan Finansial Rumah Tangga","Hukum Pernikahan & Administrasi KUA","Psikologi Suami & Istri","Ilmu Dasar Pengasuhan Anak (Parenting)","Spiritualitas & Etika Berkeluarga"];
+            for (let i=1;i<=8;i++){
+                const m = map[i] || {};
+                const card = document.createElement('div');
+                card.className = "border border-gray-200 rounded-xl p-4";
+                card.innerHTML = `
+                    <p class="font-bold text-teal-700 mb-2">Sesi ${i} — ${esc(titles[i-1])}</p>
+                    <input id="mat-judul-${i}" placeholder="Judul materi" value="${esc(m.judul||'')}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2">
+                    <input id="mat-video-${i}" placeholder="URL embed video (mis. https://www.youtube.com/embed/ID)" value="${esc(m.video_url||'')}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2">
+                    <textarea id="mat-desk-${i}" rows="3" placeholder="Materi / narasi..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2">${esc(m.deskripsi||'')}</textarea>
+                    <div class="flex items-center gap-4">
+                        <label class="text-xs text-gray-500">Menit belajar min: <input id="mat-mins-${i}" type="number" min="1" value="${m.mins_watch||15}" class="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm"></label>
+                        <label class="flex items-center text-xs text-gray-500 gap-1"><input id="mat-aktif-${i}" type="checkbox" ${m.aktif===false?'':'checked'}> Aktif</label>
+                        <button onclick="saveMateri(${i})" class="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-1.5 text-sm font-bold">Simpan</button>
+                    </div>`;
+                container.appendChild(card);
+            }
+        }
+
+        async function saveMateri(i) {
+            const judul = document.getElementById('mat-judul-'+i).value.trim();
+            const video = document.getElementById('mat-video-'+i).value.trim();
+            const desk = document.getElementById('mat-desk-'+i).value.trim();
+            const mins = parseInt(document.getElementById('mat-mins-'+i).value)||15;
+            const aktif = document.getElementById('mat-aktif-'+i).checked;
+            const { error } = await supabase.from('materi').upsert({
+                sesi_num: i, judul: judul||("Sesi "+i), video_url: video||null, deskripsi: desk, mins_watch: mins, aktif: aktif
+            }, { onConflict: 'sesi_num' });
+            alert(error ? "Gagal: " + error.message : "Materi Sesi "+i+" tersimpan.");
+        }
+
+        // ============ ARTIKEL ============
+        async function loadArtikelList() {
+            const { data: list } = await supabase.from('artikel').select('*').order('created_at', {ascending:false});
+            const tbody = document.getElementById('tbl-artikel');
+            tbody.innerHTML = '';
+            if (!list || list.length===0){ tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Belum ada artikel.</td></tr>'; return; }
+            (list||[]).forEach(a => {
+                const tr = document.createElement('tr');
+                tr.className="border-b hover:bg-gray-50";
+                tr.innerHTML = `<td class="p-3 font-semibold">${esc(a.judul)}</td><td class="p-3 text-gray-500">${esc(a.kategori)}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editArtikel(${a.id})" class="text-xs text-teal-600 hover:underline">Edit</button>
+                        <button onclick="hapusArtikel(${a.id})" class="text-xs text-red-600 hover:underline">Hapus</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function saveArtikel() {
+            const id = document.getElementById('art-id').value;
+            const judul = document.getElementById('art-judul').value.trim();
+            const kategori = document.getElementById('art-kategori').value.trim() || 'Umum';
+            const isi = document.getElementById('art-isi').value.trim();
+            const msg = document.getElementById('art-msg');
+            if (!judul || !isi) { msg.className="mt-2 text-sm font-semibold text-red-600"; msg.innerText="Judul & isi wajib."; return; }
+            const file = document.getElementById('art-gambar').files[0];
+            let gambar_url = null;
+            if (file) gambar_url = await fileToDataUrl(file);
+            const payload = { judul, kategori, isi, ...(gambar_url?{gambar_url}:{}) };
+            const { error } = id
+                ? await supabase.from('artikel').update(payload).eq('id', id)
+                : await supabase.from('artikel').insert(payload);
+            msg.className = "mt-2 text-sm font-semibold " + (error ? "text-red-600":"text-green-600");
+            msg.innerText = error ? "Gagal: "+error.message : "Artikel tersimpan.";
+            if (!error) resetArtikelForm();
+            loadArtikelList(); loadDash();
+        }
+
+        function editArtikel(id) {
+            supabase.from('artikel').select('*').eq('id', id).single().then(({data}) => {
+                document.getElementById('art-id').value = data.id;
+                document.getElementById('art-judul').value = data.judul;
+                document.getElementById('art-kategori').value = data.kategori;
+                document.getElementById('art-isi').value = data.isi;
+            });
+        }
+        async function hapusArtikel(id){ await supabase.from('artikel').delete().eq('id',id); loadArtikelList(); loadDash(); }
+        function resetArtikelForm(){ ['art-id','art-judul','art-kategori','art-isi'].forEach(i=>document.getElementById(i).value=''); document.getElementById('art-gambar').value=''; }
+
+        // ============ TEMPLATE SERTIFIKAT ============
+        async function loadTemplate() {
+            const { data: list } = await supabase.from('sertifikat_template').select('*').order('created_at',{ascending:false});
+            const box = document.getElementById('tpl-list');
+            box.innerHTML = '';
+            if (!list || list.length===0){ box.innerHTML = '<p class="text-gray-400 col-span-3 text-center py-8">Belum ada template. Upload di atas.</p>'; return; }
+            (list||[]).forEach(t => {
+                const el = document.createElement('div');
+                el.className = "bg-white rounded-xl shadow-sm border overflow-hidden";
+                el.innerHTML = `
+                    <div class="h-40 bg-gray-100 flex items-center justify-center overflow-hidden"><img src="${t.gambar_url}" class="w-full h-full object-cover"></div>
+                    <div class="p-3">
+                        <p class="font-bold text-sm">${esc(t.nama)}</p>
+                        <div class="mt-2 flex gap-2">
+                            <button onclick="setAktifTemplate(${t.id})" class="${t.aktif?'bg-green-600':'bg-gray-200'} ${t.aktif?'text-white':'text-gray-600'} rounded-lg px-3 py-1 text-xs font-bold">${t.aktif?'✓ Aktif':'Aktifkan'}</button>
+                            <button onclick="hapusTemplate(${t.id})" class="bg-red-100 text-red-600 rounded-lg px-3 py-1 text-xs font-bold">Hapus</button>
+                        </div>
+                    </div>`;
+                box.appendChild(el);
+            });
+        }
+
+        async function uploadTemplate() {
+            const nama = document.getElementById('sf-nama').value.trim();
+            const file = document.getElementById('sf-file').files[0];
+            const msg = document.getElementById('sf-msg');
+            if (!nama || !file) { msg.className="mt-3 text-sm font-semibold text-red-600"; msg.innerText="Isi nama & pilih gambar."; return; }
+            const dataUrl = await fileToDataUrl(file);
+            const { error } = await supabase.from('sertifikat_template').insert({ nama, gambar_url: dataUrl });
+            msg.className = "mt-3 text-sm font-semibold " + (error ? "text-red-600":"text-green-600");
+            msg.innerText = error ? "Gagal: "+error.message : "Template diupload. Aktifkan untuk dipakai.";
+            if (!error){ document.getElementById('sf-nama').value=''; document.getElementById('sf-file').value=''; }
+            loadTemplate(); loadDash();
+        }
+
+        async function setAktifTemplate(id) {
+            // nonaktifkan semua dulu lalu aktifkan id
+            await supabase.from('sertifikat_template').update({ aktif: false }).neq('id', id);
+            await supabase.from('sertifikat_template').update({ aktif: true }).eq('id', id);
+            loadTemplate(); loadDash();
+        }
+        async function hapusTemplate(id){ if(!confirm("Hapus template?"))return; await supabase.from('sertifikat_template').delete().eq('id',id); loadTemplate(); loadDash(); }
+
+        // ============ UTIL ============
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(file);
+            });
+        }
+        function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        init();
+    </script>
+</body>
+</html>

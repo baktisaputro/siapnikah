@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masuk — LMS Persiapan Pernikahan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        .bg-auth {
+            background: linear-gradient(135deg, #0f766e 0%, #134e4a 50%, #0d9488 100%);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .float { animation: float 4s ease-in-out infinite; }
+        .fade-up { animation: fadeUp 0.5s ease-out both; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            display: inline-block;
+            animation: spin 0.7s linear infinite;
+            vertical-align: -3px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-auth min-h-screen text-gray-800 font-sans">
+
+    <div class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-5xl grid md:grid-cols-2 bg-white rounded-3xl shadow-2xl overflow-hidden">
+
+            <!-- Panel Kiri - Branding -->
+            <div class="hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-teal-700 to-teal-900 text-white relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center text-3xl mb-6 float">💍</div>
+                    <h1 class="text-3xl font-bold leading-tight">Selamat Datang di<br>LMS Persiapan Pernikahan</h1>
+                    <p class="text-teal-100 mt-4 text-sm leading-relaxed">
+                        Kurikulum lengkap bimbingan pranikah untuk memastikan Anda dan pasangan siap menjalani bahtera rumah tangga.
+                    </p>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex space-x-2 mt-8">
+                        <span class="px-3 py-1 rounded-full bg-white/10 text-xs">📊 8 Modul</span>
+                        <span class="px-3 py-1 rounded-full bg-white/10 text-xs">🎓 Sertifikat</span>
+                        <span class="px-3 py-1 rounded-full bg-white/10 text-xs">🔐 Aman</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Kanan - Form -->
+            <div class="p-8 md:p-12 fade-up">
+                <div class="md:hidden flex justify-center mb-6">
+                    <div class="w-14 h-14 rounded-2xl bg-teal-800 text-white flex items-center justify-center text-2xl">💍</div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-800" id="form-title">Masuk</h2>
+                <p class="text-gray-500 text-sm mt-1 mb-6" id="form-subtitle">Lanjutkan belajar dari tempat terakhir Anda berhenti.</p>
+
+                <!-- Pesan status -->
+                <div id="auth-msg" class="hidden mb-4 p-3 rounded-lg text-sm font-semibold"></div>
+
+                <!-- Tab Login / Daftar -->
+                <div class="flex bg-gray-100 rounded-xl p-1 mb-6">
+                    <button id="tab-login" onclick="switchAuthMode('login')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm bg-white shadow transition">Masuk</button>
+                    <button id="tab-register" onclick="switchAuthMode('register')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm text-gray-500 transition">Daftar</button>
+                </div>
+
+                <!-- Form Login -->
+                <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1.5">Email</label>
+                        <input type="email" id="login-email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="nama@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1.5">Kata Sandi</label>
+                        <div class="relative">
+                            <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="••••••••">
+                            <button type="button" onclick="togglePw('login-password', this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-teal-600" tabindex="-1" aria-label="Lihat kata sandi">
+                                <svg id="eye-login-password" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-teal-600/20">Masuk</button>
+                </form>
+
+                <!-- Form Register -->
+                <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1.5">Nama Lengkap</label>
+                        <input type="text" id="reg-name" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Nama Anda">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1.5">Email</label>
+                        <input type="email" id="reg-email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="nama@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1.5">Kata Sandi</label>
+                        <div class="relative">
+                            <input type="password" id="reg-password" required minlength="6" class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Minimal 6 karakter">
+                            <button type="button" onclick="togglePw('reg-password', this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-teal-600" tabindex="-1" aria-label="Lihat kata sandi">
+                                <svg id="eye-reg-password" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-teal-600/20">Daftar Akun</button>
+                    <p class="text-xs text-gray-400 text-center">Dengan mendaftar, Anda menyetujui penyimpanan data untuk keperluan LMS ini.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+
+        function togglePw(inputId) {
+            const input = document.getElementById(inputId);
+            const eye = document.getElementById('eye-' + inputId);
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            if (eye) {
+                eye.innerHTML = isHidden
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>'
+                    : '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+            }
+        }
+
+        function switchAuthMode(mode) {
+            const isLogin = mode === 'login';
+            document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('form-register').classList.toggle('hidden', isLogin);
+            document.getElementById('tab-login').className = isLogin
+                ? "flex-1 py-2.5 rounded-lg font-semibold text-sm bg-white shadow transition"
+                : "flex-1 py-2.5 rounded-lg font-semibold text-sm text-gray-500 transition";
+            document.getElementById('tab-register').className = isLogin
+                ? "flex-1 py-2.5 rounded-lg font-semibold text-sm text-gray-500 transition"
+                : "flex-1 py-2.5 rounded-lg font-semibold text-sm bg-white shadow transition";
+            document.getElementById('form-title').innerText = isLogin ? "Masuk" : "Daftar Akun";
+            document.getElementById('form-subtitle').innerText = isLogin
+                ? "Lanjutkan belajar dari tempat terakhir Anda berhenti."
+                : "Buat akun baru untuk mulai perjalanan belajar.";
+            hideMsg();
+        }
+
+        function showMsg(text, type) {
+            const el = document.getElementById('auth-msg');
+            el.classList.remove('hidden');
+            el.className = "mb-4 p-3 rounded-lg text-sm font-semibold " +
+                (type === 'error'
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-green-50 text-green-700 border border-green-200");
+            el.innerText = text;
+        }
+        function hideMsg() {
+            document.getElementById('auth-msg').classList.add('hidden');
+        }
+
+        function setBtnLoading(btn, loading, label) {
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> ' + label;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = label;
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            hideMsg();
+            const btn = e.target.querySelector('button[type=submit]');
+            setBtnLoading(btn, true, "Masuk...");
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                const msg = error.message.includes('Invalid login')
+                    ? "Email atau kata sandi salah."
+                    : error.message;
+                showMsg(msg, 'error');
+                setBtnLoading(btn, false, "Masuk");
+                return;
+            }
+            // Sesi tersimpan otomatis oleh supabase -> arahkan sesuai role
+            window.location.href = await homeForRole(data.user.id);
+        }
+
+        async function homeForRole(uid) {
+            const { data: prof } = await supabase.from('profil').select('is_admin').eq('user_id', uid).maybeSingle();
+            return (prof && prof.is_admin) ? "admin.html" : "index.html";
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            hideMsg();
+            const btn = e.target.querySelector('button[type=submit]');
+            setBtnLoading(btn, true, "Mendaftar...");
+            const nama = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) {
+                showMsg(error.message, 'error');
+                setBtnLoading(btn, false, "Daftar Akun");
+                return;
+            }
+
+            localStorage.setItem('pending_name', nama);
+            if (data.session) {
+                // Konfirmasi email nonaktif -> langsung masuk
+                const user = data.user;
+                await supabase.from('profil').upsert({ user_id: user.id, nama: nama });
+                window.location.href = await homeForRole(user.id);
+            } else {
+                // Masih butuh verifikasi email (bila belum dinonaktifkan)
+                showMsg("Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi, lalu masuk.", 'ok');
+                switchAuthMode('login');
+                setBtnLoading(btn, false, "Daftar Akun");
+            }
+        }
+
+        window.onload = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) window.location.href = "index.html";
+            switchAuthMode('login');
+        };
+    </script>
+</body>
+</html>
