@@ -6,6 +6,12 @@
     <title>Panel Admin — LMS Persiapan Pernikahan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Fallback CDN: jika jsdelivr diblokir/lambat, muat dari unpkg
+        if (!window.supabase) {
+            document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>');
+        }
+    </script>
     <script src="config.js"></script>
     <style>
         .tabpane { display: none; }
@@ -150,11 +156,18 @@
     </div>
 
     <script>
-        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+        let supabase = null;
         let adminEmail = null;
 
         // ============ GATE / AUTH ============
         async function init() {
+            try {
+                if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
+                supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+            } catch (err) {
+                rejectAccess(err.message);
+                return;
+            }
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) { rejectAccess("Silakan masuk dulu."); return; }
             // cek is_admin

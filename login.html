@@ -6,6 +6,12 @@
     <title>Masuk — LMS Persiapan Pernikahan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Fallback CDN: jika jsdelivr diblokir/lambat, muat dari unpkg
+        if (!window.supabase) {
+            document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>');
+        }
+    </script>
     <script src="config.js"></script>
     <style>
         .bg-auth {
@@ -119,8 +125,9 @@
     </div>
 
     <script>
-        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
-
+        // ============================================================
+        // FUNGSI UI (tidak bergantung pada Supabase, selalu aktif)
+        // ============================================================
         function togglePw(inputId) {
             const input = document.getElementById(inputId);
             const eye = document.getElementById('eye-' + inputId);
@@ -173,6 +180,17 @@
             }
         }
 
+        // ============================================================
+        // SUPABASE (diinisialisasi aman agar kegagalan CDN tak mematikan UI)
+        // ============================================================
+        let supabase = null;
+        function getSupabase() {
+            if (supabase) return supabase;
+            if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
+            supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+            return supabase;
+        }
+
         async function handleLogin(e) {
             e.preventDefault();
             hideMsg();
@@ -180,8 +198,13 @@
             setBtnLoading(btn, true, "Masuk...");
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
-
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            let sb;
+            try { sb = getSupabase(); } catch (err) {
+                showMsg(err.message, 'error');
+                setBtnLoading(btn, false, "Masuk");
+                return;
+            }
+            const { data, error } = await sb.auth.signInWithPassword({ email, password });
             if (error) {
                 const msg = error.message.includes('Invalid login')
                     ? "Email atau kata sandi salah."
@@ -195,8 +218,15 @@
         }
 
         async function homeForRole(uid) {
-            const { data: prof } = await supabase.from('profil').select('is_admin').eq('user_id', uid).maybeSingle();
-            return (prof && prof.is_admin) ? "admin.html" : "index.html";
+            try {
+                const sb = getSupabase();
+                const { data: prof, error } = await sb.from('profil').select('is_admin').eq('user_id', uid).maybeSingle();
+                if (error) console.error('cek profil:', error.message);
+                return (prof && prof.is_admin) ? "admin.html" : "index.html";
+            } catch (err) {
+                console.error("gagal cek profil, default ke index:", err.message);
+                return "index.html";
+            }
         }
 
         async function handleRegister(e) {
@@ -207,8 +237,13 @@
             const nama = document.getElementById('reg-name').value.trim();
             const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
-
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            let sb;
+            try { sb = getSupabase(); } catch (err) {
+                showMsg(err.message, 'error');
+                setBtnLoading(btn, false, "Daftar Akun");
+                return;
+            }
+            const { data, error } = await sb.auth.signUp({ email, password });
             if (error) {
                 showMsg(error.message, 'error');
                 setBtnLoading(btn, false, "Daftar Akun");
@@ -219,7 +254,7 @@
             if (data.session) {
                 // Konfirmasi email nonaktif -> langsung masuk
                 const user = data.user;
-                await supabase.from('profil').upsert({ user_id: user.id, nama: nama });
+                try { await sb.from('profil').upsert({ user_id: user.id, nama: nama }); } catch (e2) { console.error(e2); }
                 window.location.href = await homeForRole(user.id);
             } else {
                 // Masih butuh verifikasi email (bila belum dinonaktifkan)
@@ -230,9 +265,14 @@
         }
 
         window.onload = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) window.location.href = "index.html";
             switchAuthMode('login');
+            try {
+                const sb = getSupabase();
+                const { data: { session } } = await sb.auth.getSession();
+                if (session) window.location.href = "index.html";
+            } catch (err) {
+                console.error("Login siap, tapi Supabase belum termuat:", err.message);
+            }
         };
     </script>
 </body>

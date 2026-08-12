@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- LMS PREPARASI PERNIKAHAN - SKEMA DATABASE + RLS (SUPABASE)
 -- Jalankan seluruh isi file ini di: Supabase Dashboard > SQL Editor > New Query > Run
 -- ============================================================
@@ -82,6 +82,22 @@ alter table public.artikel              enable row level security;
 alter table public.sertifikat_template  enable row level security;
 
 -- ------------------------------------------------------------
+-- FUNGSI DETEKSI ADMIN (security definer -> bypass RLS, hindari rekursi)
+-- ------------------------------------------------------------
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce(
+    (select p.is_admin from public.profil p where p.user_id = auth.uid()),
+    false
+  );
+$$;
+
+-- ------------------------------------------------------------
 -- PROFIL
 -- - User biasa: baca/ubah profil sendiri.
 -- - Admin: baca & ubah SEMUA profil (termasuk menandai is_admin).
@@ -92,7 +108,7 @@ create policy "profil_select_own" on public.profil
 
 drop policy if exists "profil_select_admin" on public.profil;
 create policy "profil_select_admin" on public.profil
-    for select using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for select using (public.is_admin());
 
 drop policy if exists "profil_insert_own" on public.profil;
 create policy "profil_insert_own" on public.profil
@@ -103,13 +119,17 @@ create policy "profil_update_own" on public.profil
     for update using (auth.uid() = user_id)
     with check (auth.uid() = user_id and is_admin = false);  -- user tak bisa menjadikan diri admin
 
+drop policy if exists "profil_insert_admin" on public.profil;
+create policy "profil_insert_admin" on public.profil
+    for insert with check (public.is_admin());
+
 drop policy if exists "profil_update_admin" on public.profil;
 create policy "profil_update_admin" on public.profil
-    for update using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for update using (public.is_admin());
 
 drop policy if exists "profil_delete_admin" on public.profil;
 create policy "profil_delete_admin" on public.profil
-    for delete using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for delete using (public.is_admin());
 
 -- ------------------------------------------------------------
 -- PERJALANAN SESI (user hanya akses miliknya; admin lihat semua)
@@ -120,7 +140,7 @@ create policy "sesi_select_own" on public.perjalanan_sesi
 
 drop policy if exists "sesi_select_admin" on public.perjalanan_sesi;
 create policy "sesi_select_admin" on public.perjalanan_sesi
-    for select using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for select using (public.is_admin());
 
 drop policy if exists "sesi_insert_own" on public.perjalanan_sesi;
 create policy "sesi_insert_own" on public.perjalanan_sesi
@@ -143,8 +163,8 @@ create policy "materi_select_all" on public.materi
 
 drop policy if exists "materi_adm" on public.materi;
 create policy "materi_adm" on public.materi
-    for all using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true))
-    with check (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for all using (public.is_admin())
+    with check (public.is_admin());
 
 -- ------------------------------------------------------------
 -- ARTIKEL (peserta baca; admin CRUD)
@@ -155,8 +175,8 @@ create policy "artikel_select_all" on public.artikel
 
 drop policy if exists "artikel_adm" on public.artikel;
 create policy "artikel_adm" on public.artikel
-    for all using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true))
-    with check (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for all using (public.is_admin())
+    with check (public.is_admin());
 
 -- ------------------------------------------------------------
 -- SERTIFIKAT TEMPLATE (peserta baca; admin CRUD)
@@ -167,8 +187,32 @@ create policy "sertif_select_all" on public.sertifikat_template
 
 drop policy if exists "sertif_adm" on public.sertifikat_template;
 create policy "sertif_adm" on public.sertifikat_template
-    for all using (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true))
-    with check (exists (select 1 from public.profil p where p.user_id = auth.uid() and p.is_admin = true));
+    for all using (public.is_admin())
+    with check (public.is_admin());
+
+-- ============================================================
+-- TRIGGER: BUAT PROFIL OTOMATIS SAAT USER BARU MENDAFTAR
+-- Membuat baris profil ('Peserta') langsung saat akun auth dibuat,
+-- jadi peserta tidak pernah "kehilangan" profil saat login pertama.
+-- ============================================================
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $BODY$
+begin
+    insert into public.profil (user_id, nama)
+    values (new.id, coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Peserta'))
+    on conflict (user_id) do nothing;
+    return new;
+end;
+$BODY$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+    after insert on auth.users
+    for each row execute function public.handle_new_user();
 
 -- ============================================================
 -- PENGAKTIFAN ADMIN PERTAMA
@@ -182,3 +226,4 @@ create policy "sertif_adm" on public.sertifikat_template
 -- ============================================================
 -- SELESAI
 -- ============================================================
+

@@ -6,6 +6,12 @@
     <title>LMS Persiapan Pernikahan v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Fallback CDN: jika jsdelivr diblokir/lambat, muat dari unpkg
+        if (!window.supabase) {
+            document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"><\/script>');
+        }
+    </script>
     <script src="config.js"></script>
     <style>
         .view-section { display: none; }
@@ -252,10 +258,29 @@
 
     <script>
         // ==================== INIT SUPABASE ====================
-        const supabase = window.supabase.createClient(
-            window.SUPABASE_URL,
-            window.SUPABASE_KEY
-        );
+        let supabase = null;
+        function ensureSupabase() {
+            if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
+            return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+        }
+
+        function showFatal(msg) {
+            document.getElementById('app-view').style.display = 'none';
+            let el = document.getElementById('fatal-screen');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'fatal-screen';
+                el.className = 'flex min-h-screen items-center justify-center bg-gray-100 p-6';
+                document.body.appendChild(el);
+            }
+            el.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md text-center">
+                <div class="text-4xl mb-4">⚠️</div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Tidak dapat memuat aplikasi</h2>
+                <p class="text-sm text-gray-500 mb-6">${msg}</p>
+                <button onclick="location.reload()" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-bold shadow">Coba Lagi</button>
+                <a href="login.html" class="inline-block ml-3 text-teal-600 text-sm font-bold hover:underline">Ke Halaman Login</a>
+            </div>`;
+        }
 
         // ==================== STATE DATA ====================
         const sessionsData = [
@@ -671,6 +696,12 @@
 
         // ==================== INIT ====================
         window.onload = async () => {
+            try {
+                supabase = ensureSupabase();
+            } catch (err) {
+                showFatal(err.message);
+                return;
+            }
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 state.user = session.user;
