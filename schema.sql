@@ -4,16 +4,20 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- 1) TABEL PROFIL  (tambah kolom is_admin utk menandai pemilik/admin)
+-- 1) TABEL PROFIL  (is_admin = penanda pemilik/superadmin)
 -- ------------------------------------------------------------
 create table if not exists public.profil (
     user_id     uuid primary key references auth.users(id) on delete cascade,
     nama        text not null default 'Peserta',
+    email       text,
     jml_sesi    int  not null default 8,
     is_admin    boolean not null default false,
     phone       text,
     updated_at  timestamptz default now()
 );
+
+-- Pastikan kolom email ada, untuk kasus tabel profil sudah dibuat lebih dulu (skema lama)
+alter table public.profil add column if not exists email text;
 
 -- ------------------------------------------------------------
 -- 2) TABEL PERJALANAN SESI (progres per-sesi tiap pengguna)
@@ -117,7 +121,7 @@ create policy "profil_insert_own" on public.profil
 drop policy if exists "profil_update_own" on public.profil;
 create policy "profil_update_own" on public.profil
     for update using (auth.uid() = user_id)
-    with check (auth.uid() = user_id and is_admin = false);  -- user tak bisa menjadikan diri admin
+    with check (auth.uid() = user_id and is_admin = public.is_admin());  -- tak bisa naikkan/demote diri sendiri
 
 drop policy if exists "profil_insert_admin" on public.profil;
 create policy "profil_insert_admin" on public.profil
@@ -194,7 +198,8 @@ create policy "sertif_adm" on public.sertifikat_template
 -- TRIGGER: BUAT PROFIL OTOMATIS SAAT USER BARU MENDAFTAR
 -- Membuat baris profil ('Peserta') langsung saat akun auth dibuat,
 -- jadi peserta tidak pernah "kehilangan" profil saat login pertama.
--- ============================================================
+-- SUPERADMIN BOOTSTRAP: USER PERTAMA YANG MENDAFTAR OTOMATIS JADI ADMIN.
+-- ------------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -202,8 +207,13 @@ security definer
 set search_path = public
 as $BODY$
 begin
-    insert into public.profil (user_id, nama)
-    values (new.id, coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Peserta'))
+    insert into public.profil (user_id, nama, email, is_admin)
+    values (
+        new.id,
+        coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Peserta'),
+        new.email,
+        (select not exists (select 1 from public.profil p where p.is_admin = true))
+    )
     on conflict (user_id) do nothing;
     return new;
 end;
@@ -215,15 +225,37 @@ create trigger on_auth_user_created
     for each row execute function public.handle_new_user();
 
 -- ============================================================
--- PENGAKTIFAN ADMIN PERTAMA
--- Ganti 'admin@email.com' dengan email akun yang ingin dijadikan
--- pemilik/admin, lalu jalankan sekali. (Komentar aktif di bawah)
+-- PENYESUAIAN UNTUK AKUN YANG SUDAH ADA SEBELUM SKEMA INI DIJALANKAN
+-- 1) Buat baris profil untuk semua akun yang belum punya (tabel lama belum ada).
+-- 2) Isi kolom email profil dari data auth.users.
+-- 3) Jika belum ada admin sama sekali, user paling tua dijadikan superadmin.
+--    (Semua aman dijalankan ulang kapan pun.)
 -- ============================================================
+insert into public.profil (user_id, nama, email)
+select
+    u.id,
+    coalesce(nullif(u.raw_user_meta_data->>'full_name', ''), 'Peserta'),
+    u.email
+from auth.users u
+left join public.profil p on p.user_id = u.id
+where p.user_id is null
+on conflict (user_id) do nothing;
+
+update public.profil p
+set email = u.email
+from auth.users u
+where p.user_id = u.id
+  and (p.email is null or p.email = '');
+
+update public.profil p
+set is_admin = true
+where not exists (select 1 from public.profil where is_admin = true)
+  and p.user_id = (select u.id from auth.users u order by u.created_at asc limit 1);
+
+-- ============================================================
+-- PENGAKTIFAN MANUAL (OPSIONAL) — ganti dengan email akun pemilik:
 -- update public.profil
 -- set is_admin = true
 -- where user_id = (select id from auth.users where lower(email) = 'admin@email.com');
-
--- ============================================================
--- SELESAI
 -- ============================================================
 

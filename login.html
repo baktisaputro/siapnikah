@@ -76,8 +76,8 @@
 
                 <!-- Tab Login / Daftar -->
                 <div class="flex bg-gray-100 rounded-xl p-1 mb-6">
-                    <button id="tab-login" onclick="switchAuthMode('login')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm bg-white shadow transition">Masuk</button>
-                    <button id="tab-register" onclick="switchAuthMode('register')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm text-gray-500 transition">Daftar</button>
+                    <button type="button" id="tab-login" onclick="switchAuthMode('login')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm bg-white shadow transition">Masuk</button>
+                    <button type="button" id="tab-register" onclick="switchAuthMode('register')" class="flex-1 py-2.5 rounded-lg font-semibold text-sm text-gray-500 transition">Daftar</button>
                 </div>
 
                 <!-- Form Login -->
@@ -183,12 +183,12 @@
         // ============================================================
         // SUPABASE (diinisialisasi aman agar kegagalan CDN tak mematikan UI)
         // ============================================================
-        let supabase = null;
+        let sbClient = null;
         function getSupabase() {
-            if (supabase) return supabase;
+            if (sbClient) return sbClient;
             if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
-            supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
-            return supabase;
+            sbClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+            return sbClient;
         }
 
         async function handleLogin(e) {
@@ -213,7 +213,7 @@
                 setBtnLoading(btn, false, "Masuk");
                 return;
             }
-            // Sesi tersimpan otomatis oleh supabase -> arahkan sesuai role
+            // Sesi tersimpan otomatis oleh supabase-js -> arahkan sesuai role
             window.location.href = await homeForRole(data.user.id);
         }
 
@@ -254,7 +254,7 @@
             if (data.session) {
                 // Konfirmasi email nonaktif -> langsung masuk
                 const user = data.user;
-                try { await sb.from('profil').upsert({ user_id: user.id, nama: nama }); } catch (e2) { console.error(e2); }
+                try { await sb.from('profil').upsert({ user_id: user.id, nama: nama, email: email }); } catch (e2) { console.error(e2); }
                 window.location.href = await homeForRole(user.id);
             } else {
                 // Masih butuh verifikasi email (bila belum dinonaktifkan)
@@ -266,10 +266,13 @@
 
         window.onload = async () => {
             switchAuthMode('login');
+            // Pengaman: pastikan tab selalu bisa diklik walau inline onclick diblokir
+            document.getElementById('tab-login').addEventListener('click', () => switchAuthMode('login'));
+            document.getElementById('tab-register').addEventListener('click', () => switchAuthMode('register'));
             try {
                 const sb = getSupabase();
                 const { data: { session } } = await sb.auth.getSession();
-                if (session) window.location.href = "index.html";
+                if (session) window.location.href = await homeForRole(session.user.id);
             } catch (err) {
                 console.error("Login siap, tapi Supabase belum termuat:", err.message);
             }

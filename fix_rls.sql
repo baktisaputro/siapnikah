@@ -39,7 +39,7 @@ create policy "profil_insert_own" on public.profil
 drop policy if exists "profil_update_own" on public.profil;
 create policy "profil_update_own" on public.profil
     for update using (auth.uid() = user_id)
-    with check (auth.uid() = user_id and is_admin = false);
+    with check (auth.uid() = user_id and is_admin = public.is_admin());
 
 --    admin: lihat & ubah SEMUA profil
 drop policy if exists "profil_select_admin" on public.profil;
@@ -79,6 +79,9 @@ create policy "sertif_adm" on public.sertifikat_template
     with check (public.is_admin());
 
 -- 5) TRIGGER: buat profil otomatis saat user baru mendaftar
+--    + USER PERTAMA YANG MENDAFTAR OTOMATIS JADI SUPERADMIN
+alter table public.profil add column if not exists email text;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -86,8 +89,13 @@ security definer
 set search_path = public
 as $BODY$
 begin
-    insert into public.profil (user_id, nama)
-    values (new.id, coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Peserta'))
+    insert into public.profil (user_id, nama, email, is_admin)
+    values (
+        new.id,
+        coalesce(nullif(new.raw_user_meta_data->>'full_name', ''), 'Peserta'),
+        new.email,
+        (select not exists (select 1 from public.profil p where p.is_admin = true))
+    )
     on conflict (user_id) do nothing;
     return new;
 end;
@@ -98,6 +106,29 @@ create trigger on_auth_user_created
     after insert on auth.users
     for each row execute function public.handle_new_user();
 
+-- 6) Penyesuaian akun lama: buat profil yg belum ada, isi email,
+--    & jadikan user tertua admin jika belum ada admin
+insert into public.profil (user_id, nama, email)
+select
+    u.id,
+    coalesce(nullif(u.raw_user_meta_data->>'full_name', ''), 'Peserta'),
+    u.email
+from auth.users u
+left join public.profil p on p.user_id = u.id
+where p.user_id is null
+on conflict (user_id) do nothing;
+
+update public.profil p
+set email = u.email
+from auth.users u
+where p.user_id = u.id
+  and (p.email is null or p.email = '');
+
+update public.profil p
+set is_admin = true
+where not exists (select 1 from public.profil where is_admin = true)
+  and p.user_id = (select u.id from auth.users u order by u.created_at asc limit 1);
+
 -- ============================================================
--- SELESAI. Sekarang jalankan query admin untuk akun pemilik.
+-- SELESAI. Akun yang mendaftar pertama kali otomatis jadi superadmin.
 -- ============================================================

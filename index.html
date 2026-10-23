@@ -18,55 +18,100 @@
         .active-view { display: block; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ===== SIDEBAR responsif ===== */
+        #sidebar { transition: width .25s ease, transform .25s ease; }
+        #sidebar.collapsed { width: 4.5rem; }
+        #sidebar.collapsed .side-text { display: none; }
+        #sidebar.collapsed .side-avatar-meta { display: none; }
+        #sidebar.collapsed .side-title { display: none; }
+        #sidebar.collapsed #side-profile { justify-content: center; }
+        #sidebar.collapsed .side-nav { justify-content: center; padding-left: .5rem; padding-right: .5rem; }
+        .side-backdrop { display: none; }
+        #sidebar.open ~ #btn-hamburger { display: none; }
+        @media (max-width: 1023px) {
+            #sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 16rem !important; max-width: 85vw; transform: translateX(-100%); z-index: 60; box-shadow: 2px 0 20px rgba(0,0,0,.35); }
+            #sidebar.open { transform: translateX(0); }
+            #sidebar.collapsed { width: 16rem !important; }
+            #sidebar.collapsed .side-text { display: inline; }
+            #sidebar.collapsed .side-title { display: block; }
+            #sidebar.collapsed .side-avatar-meta { display: block; }
+            #sidebar.collapsed .side-nav { justify-content: flex-start; padding-left: 1rem; padding-right: 1rem; }
+            .side-backdrop.show { display: block; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- ============ GATE PEMUATAN (menutup app sampai sesi terverifikasi) ============ -->
+    <div id="boot-screen" class="fixed inset-0 z-[200] bg-teal-800 flex items-center justify-center">
+        <div class="text-center text-white px-6">
+            <div class="w-16 h-16 mx-auto rounded-full border-4 border-white/30 border-t-white animate-spin mb-5"></div>
+            <p class="font-semibold text-lg">Memeriksa sesi Anda...</p>
+            <p class="text-teal-200 text-sm mt-1">Mohon tunggu sebentar.</p>
+        </div>
+    </div>
+
+    <!-- ============ MODAL ARTIKEL ============ -->
+    <div id="article-modal" class="hidden fixed inset-0 z-[150] bg-black/60 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-8 relative shadow-2xl">
+            <button onclick="closeArticleModal()" class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-3xl leading-none font-bold" aria-label="Tutup">&times;</button>
+            <div id="article-modal-content"></div>
+        </div>
+    </div>
 
     <!-- ============ LAYAR UTAMA ============ -->
     <div id="app-view" class="flex h-screen overflow-hidden">
 
         <!-- SIDEBAR -->
-        <aside class="w-64 bg-teal-800 text-white flex flex-col h-full shadow-2xl relative z-10">
-            <div class="p-6 border-b border-teal-700">
-                <h1 class="text-2xl font-bold tracking-wider">LMS NIKAH</h1>
+        <aside id="sidebar" class="w-64 bg-teal-800 text-white flex flex-col h-full shadow-2xl relative z-10">
+            <div class="p-6 border-b border-teal-700 flex items-center justify-between">
+                <h1 class="side-title text-2xl font-bold tracking-wider">LMS NIKAH</h1>
+                <button onclick="toggleSidebar()" id="btn-side-toggle" class="text-teal-300 hover:text-white text-xl leading-none transition" aria-label="Perlebar/ciutkan sidebar">☰</button>
             </div>
 
             <!-- Info Akun -->
-            <div class="p-6 border-b border-teal-700 flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-full bg-teal-200 flex items-center justify-center text-teal-800 font-bold text-xl" id="avatar-letter">A</div>
-                <div>
-                    <p class="font-semibold text-sm" id="user-name">Peserta</p>
+            <div id="side-profile" class="p-6 border-b border-teal-700 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-teal-200 flex items-center justify-center text-teal-800 font-bold text-xl flex-shrink-0" id="avatar-letter">A</div>
+                <div class="side-avatar-meta min-w-0">
+                    <p class="font-semibold text-sm truncate" id="user-name">Peserta</p>
                     <p class="text-teal-300 text-xs">Calon Pengantin</p>
                 </div>
             </div>
 
             <!-- Menu Navigasi -->
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <button onclick="navigate('dashboard-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 bg-teal-700 hover:bg-teal-600 transition">
-                    <span>📊</span> <span>Dasbor Pembelajaran</span>
+                <button onclick="navigate('dashboard-view')" class="side-nav w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 bg-teal-700 hover:bg-teal-600 transition">
+                    <span>📊</span> <span class="side-text">Dasbor Pembelajaran</span>
                 </button>
-                <button onclick="navigate('history-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
-                    <span>📝</span> <span>Riwayat Nilai</span>
+                <button onclick="navigate('history-view')" class="side-nav w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                    <span>📝</span> <span class="side-text">Riwayat Nilai</span>
                 </button>
-                <button onclick="navigate('article-view')" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
-                    <span>📚</span> <span>Artikel Edukasi</span>
+                <button onclick="navigate('article-view')" class="side-nav w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                    <span>📚</span> <span class="side-text">Artikel Edukasi</span>
                 </button>
                 <div id="sidebar-admin" class="hidden">
-                    <a href="admin.html" class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
-                        <span>🛡️</span> <span>Panel Admin</span>
+                    <a href="admin.html" class="side-nav w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hover:bg-teal-700 transition">
+                        <span>🛡️</span> <span class="side-text">Panel Admin</span>
                     </a>
                 </div>
                 <div class="pt-4 mt-4 border-t border-teal-700">
-                    <button id="btn-side-cert" onclick="navigate('certificate-view')" disabled class="w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-400 cursor-not-allowed transition">
-                        <span>🎓</span> <span id="text-side-cert">Sertifikat (Terkunci)</span>
+                    <button id="btn-side-cert" onclick="navigate('certificate-view')" disabled class="side-nav w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-400 cursor-not-allowed transition">
+                        <span>🎓</span> <span class="side-text" id="text-side-cert">Sertifikat (Terkunci)</span>
                     </button>
                 </div>
             </nav>
 
             <div class="p-4 border-t border-teal-700">
-                <button onclick="handleLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition text-sm font-semibold">Keluar Aplikasi</button>
+                <button onclick="handleLogout()" class="side-nav w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition text-sm font-semibold flex items-center justify-center gap-2">
+                    <span>⏻</span><span class="side-text">Keluar Aplikasi</span>
+                </button>
             </div>
         </aside>
+
+        <!-- Backdrop + Hamburger (mobile) -->
+        <div id="sidebar-backdrop" onclick="closeSidebarMobile()" class="side-backdrop fixed inset-0 bg-black/40 z-[55]"></div>
+        <button id="btn-hamburger" onclick="toggleSidebar()" class="lg:hidden fixed top-3 left-3 z-[70] bg-teal-800 text-white w-11 h-11 rounded-xl shadow-lg flex items-center justify-center text-xl" aria-label="Buka menu">☰</button>
 
         <!-- MAIN -->
         <main class="flex-1 h-full overflow-y-auto bg-gray-50 relative">
@@ -152,15 +197,9 @@
                 <!-- VIEW: PRE-TEST -->
                 <section id="pretest-view" class="view-section fade-in max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-10">
                     <h2 class="text-2xl font-bold mb-2 text-teal-700" id="pretest-title">Pre-Test</h2>
-                    <p class="mb-6 text-gray-500 border-b pb-4">Soal evaluasi awal (Wajib dijawab untuk melihat materi)</p>
+                    <p class="mb-6 text-gray-500 border-b pb-4">Soal evaluasi awal. Jawab <strong>semua</strong> soal untuk membuka materi.</p>
 
-                    <div class="space-y-4 mb-8">
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <p class="font-semibold mb-3">1. Menurut Anda, apa tantangan terbesar di tahun pertama pernikahan?</p>
-                            <label class="flex items-center space-x-3 mb-2 cursor-pointer"><input type="radio" name="q1" class="form-radio h-5 w-5 text-teal-600"> <span>Masalah finansial</span></label>
-                            <label class="flex items-center space-x-3 cursor-pointer"><input type="radio" name="q1" class="form-radio h-5 w-5 text-teal-600"> <span>Penyesuaian kebiasaan harian</span></label>
-                        </div>
-                    </div>
+                    <div id="pretest-questions" class="space-y-4 mb-8"></div>
 
                     <button onclick="startMaterial()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-bold transition">Kirim Pre-Test & Mulai Sesi</button>
                 </section>
@@ -202,15 +241,9 @@
                 <!-- VIEW: POST-TEST -->
                 <section id="posttest-view" class="view-section fade-in max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200 mt-10">
                     <h2 class="text-2xl font-bold mb-2 text-teal-700" id="posttest-title">Post-Test</h2>
-                    <p class="mb-6 text-gray-500 border-b pb-4">Uji pemahaman akhir materi. Nilai ini akan menentukan kesiapan Anda.</p>
+                    <p class="mb-6 text-gray-500 border-b pb-4">Uji pemahaman akhir materi. Nilai minimal kelulusan: <strong class="text-teal-700">80</strong>.</p>
 
-                    <div class="space-y-4 mb-8">
-                        <div class="bg-gray-50 p-4 rounded border">
-                            <p class="font-semibold mb-3">1. Apa langkah yang paling tepat jika terjadi perselisihan pendapat?</p>
-                            <label class="flex items-center space-x-3 mb-2 cursor-pointer"><input type="radio" name="q2" class="form-radio h-5 w-5 text-teal-600"> <span>Mendiamkan pasangan</span></label>
-                            <label class="flex items-center space-x-3 cursor-pointer"><input type="radio" name="q2" class="form-radio h-5 w-5 text-teal-600"> <span>Mencari waktu tenang untuk diskusi logis</span></label>
-                        </div>
-                    </div>
+                    <div id="posttest-questions" class="space-y-4 mb-8"></div>
 
                     <button onclick="processFinishSession()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-bold transition">Selesaikan Sesi & Lihat Hasil</button>
                 </section>
@@ -258,13 +291,15 @@
 
     <script>
         // ==================== INIT SUPABASE ====================
-        let supabase = null;
+        let sbClient = null;
         function ensureSupabase() {
             if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
             return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
         }
 
         function showFatal(msg) {
+            const boot = document.getElementById('boot-screen');
+            if (boot) boot.remove();
             document.getElementById('app-view').style.display = 'none';
             let el = document.getElementById('fatal-screen');
             if (!el) {
@@ -294,6 +329,116 @@
             "Spiritualitas & Etika Berkeluarga"
         ];
 
+        // ==================== BANK SOAL PRE/POST TEST (per sesi) ====================
+        // Struktur: { sesi: { pre: [{q,o,a}], post: [{q,o,a}] } }  -> a = index jawaban benar
+        const soalBank = {
+            1: { pre: [
+                    { q: "Apa yang dimaksud dengan 'visi keluarga'?", o: ["Daftar kegiatan rutin bulanan", "Cita-cita jangka panjang keluarga yang menjadi arah bersama", "Nama anak yang direncanakan", "Rencana liburan bersama"], a: 1 },
+                    { q: "Mengapa penting membangun visi & misi keluarga bersama pasangan?", o: ["Agar semua keputusan diputuskan satu pihak", "Supaya keluarga memiliki arah, tujuan, dan pembagian peran yang jelas", "Hanya untuk formalitas akad nikah", "Agar nama keluarga terkenal"], a: 1 },
+                    { q: "Contoh yang paling tepat dari misi keluarga adalah...", o: ["Menjadi kaya dalam waktu singkat", "Membangun keluarga yang sehat, harmonis, dan saling menghargai", "Membeli rumah mewah", "Berlibur ke luar negeri tiap tahun"], a: 1 }
+                ], post: [
+                    { q: "Siapa yang sebaiknya terlibat dalam menyusun visi & misi keluarga?", o: ["Hanya suami", "Hanya orang tua masing-masing", "Suami dan istri secara bersama-sama", "Kerabat jauh"], a: 2 },
+                    { q: "Visi keluarga sebaiknya ditinjau ulang ketika...", o: ["Tidak perlu pernah ditinjau", "Ada perubahan besar dalam keluarga dan disepakati bersama", "Setiap hari", "Hanya saat bertengkar"], a: 1 },
+                    { q: "Tujuan utama memiliki misi keluarga yang tertulis adalah...", o: ["Sebagai pajangan di rumah", "Menyamakan arah langkah dan komitmen pasangan dalam berumah tangga", "Memenuhi syarat administrasi KUA", "Untuk dibaca anak saja"], a: 1 }
+                ] },
+            2: { pre: [
+                    { q: "Langkah pertama yang tepat saat terjadi perselisihan dengan pasangan adalah...", o: ["Mendiamkan pasangan berhari-hari", "Menenangkan diri lalu berkomunikasi dengan kepala dingin", "Menyalahkan pasangan", "Membawa masalah ke media sosial"], a: 1 },
+                    { q: "Yang dimaksud komunikasi efektif dalam rumah tangga adalah...", o: ["Bicara paling keras agar didengar", "Mendengarkan dengan empati dan menyampaikan pendapat dengan jelas", "Hanya membicarakan hal yang menyenangkan", "Memutus komunikasi saat beda pendapat"], a: 1 },
+                    { q: "Apa yang sebaiknya dihindari saat berkonflik?", o: ["Menggunakan kalimat 'saya merasa...'", "Mendengarkan penuh perhatian", "Menghina dan memakai kata kasar", "Mencari solusi bersama"], a: 2 }
+                ], post: [
+                    { q: "Teknik 'kalimat saya' (I-message) bertujuan untuk...", o: ["Menyalahkan lawan bicara", "Mengungkapkan perasaan tanpa menyerang pasangan", "Memenangkan argumen", "Menutup percakapan"], a: 1 },
+                    { q: "Waktu yang paling tepat untuk membicarakan masalah adalah saat...", o: ["Kedua belah pihak tenang dan siap mendengarkan", "Pasangan sedang sibuk bekerja", "Tengah malam larut", "Di depan orang banyak"], a: 0 },
+                    { q: "Jika konflik tidak kunjung selesai, pasangan disarankan...", o: ["Berpisah diam-diam", "Mencari pihak ketiga netral seperti konselor/pendamping", "Menyeret keluarga besar", "Membiarkan sampai salah satu menyerah"], a: 1 }
+                ] },
+            3: { pre: [
+                    { q: "Pemeriksaan kesehatan pranikah yang disarankan antara lain...", o: ["Tes darah lengkap, tes penyakit menular, dan cek kesuburan dasar", "Cek golongan darah saja", "Tidak perlu pemeriksaan", "Hanya cek tensi"], a: 0 },
+                    { q: "Mengapa tes genetik/keturunan penting sebelum menikah?", o: ["Agar bisa memilih jenis kelamin anak", "Untuk mendeteksi risiko penyakit bawaan pada keturunan", "Hanya untuk formalitas", "Tidak ada manfaatnya"], a: 1 },
+                    { q: "Jarak kelahiran ideal yang disarankan bagi kesehatan ibu dan bayi adalah...", o: ["Minimal 1 tahun", "Minimal 2–3 tahun", "5–7 tahun", "Tidak perlu diatur"], a: 1 }
+                ], post: [
+                    { q: "Salah satu tujuan pemeriksaan kesehatan reproduksi pranikah adalah...", o: ["Menjamin kemampuan reproduksi dan mencegah penularan penyakit", "Meningkatkan biaya rumah tangga", "Menghindari pemeriksaan lain", "Semua jawaban salah"], a: 0 },
+                    { q: "Pasangan dengan riwayat penyakit keturunan sebaiknya...", o: ["Merahasiakannya dari pasangan", "Berkonsultasi dengan dokter/ahli genetik sebelum menikah", "Menunda menikah selamanya", "Mengabaikannya"], a: 1 },
+                    { q: "Peran imunisasi/vaksinasi pranikah adalah...", o: ["Membuat wajah lebih segar", "Melindungi ibu dan janin dari penyakit berbahaya seperti rubella", "Menambah berat badan", "Tidak berkaitan dengan kesehatan"], a: 1 }
+                ] },
+            4: { pre: [
+                    { q: "Langkah pertama perencanaan keuangan keluarga adalah...", o: ["Membeli asuransi sebanyak mungkin", "Mencatat pemasukan dan pengeluaran secara rutin", "Menabung tanpa rencana", "Berhutang untuk gaya hidup"], a: 1 },
+                    { q: "Prinsip utama dalam menyusun anggaran rumah tangga adalah...", o: ["Pengeluaran boleh lebih besar dari pemasukan", "Sesuaikan pengeluaran dengan pemasukan dan sisihkan tabungan", "Semua uang untuk konsumsi", "Tidak perlu dicatat"], a: 1 },
+                    { q: "Dana darurat sebaiknya memiliki nominal sekitar...", o: ["Satu hari gaji", "3–6 bulan pengeluaran bulanan", "Satu tahun seluruh hutang", "Tidak perlu dana darurat"], a: 1 }
+                ], post: [
+                    { q: "Utang produktif yang sehat biasanya digunakan untuk...", o: ["Konsumsi dan liburan", "Aset yang menghasilkan nilai seperti usaha/rumah tinggal", "Gaya hidup mewah", "Belanja online"], a: 1 },
+                    { q: "Kapan sebaiknya keluarga mulai berinvestasi?", o: ["Setelah hutang konsumtif lunas dan ada dana darurat", "Kapan saja tanpa syarat", "Setelah pensiun", "Tidak perlu investasi"], a: 0 },
+                    { q: "Membuat rekening bersama untuk tabungan keluarga bertujuan untuk...", o: ["Menyulitkan transaksi", "Transparansi dan kemudahan pengelolaan keuangan bersama", "Menghindari pajak", "Semua salah"], a: 1 }
+                ] },
+            5: { pre: [
+                    { q: "Syarat administrasi menikah di KUA yang wajib disiapkan antara lain...", o: ["KTP, KK, akta kelahiran, surat pengantar, dan pas foto", "SIM saja", "Rekening bank", "Surat keterangan kerja"], a: 0 },
+                    { q: "Pencatatan pernikahan bertujuan untuk...", o: ["Memberikan kepastian hukum dan melindungi hak pasangan", "Mencari biaya", "Formalitas belaka", "Mempersulit masyarakat"], a: 0 },
+                    { q: "Bila calon pasangan berbeda agama, yang perlu dilakukan...", o: ["Menikah diam-diam", "Memahami dan mengikuti ketentuan hukum yang berlaku di Indonesia", "Mengganti agama sementara", "Membatalkan rencana"], a: 1 }
+                ], post: [
+                    { q: "Akta nikah dikeluarkan oleh...", o: ["Kelurahan", "KUA / Kantor Catatan Sipil sesuai ketentuan", "Rumah Sakit", "Sekolah"], a: 1 },
+                    { q: "Pembinaan calon pengantin di KUA biasanya meliputi...", o: ["Cara memilih mobil", "Pembinaan pranikah, kesehatan, dan administrasi pernikahan", "Perjalanan umroh", "Bisnis online"], a: 1 },
+                    { q: "Mengapa surat pengantar dari RT/RW/Kelurahan diperlukan?", o: ["Untuk menambah biaya", "Sebagai bukti domisili dan kelengkapan administrasi nikah", "Hanya karena kebiasaan", "Tidak diperlukan"], a: 1 }
+                ] },
+            6: { pre: [
+                    { q: "Peran psikologis suami dalam keluarga meliputi...", o: ["Hanya mencari nafkah", "Pemimpin, pelindung, dan pasangan yang suportif", "Mengatur semua keuangan", "Tidak perlu berperan"], a: 1 },
+                    { q: "Salah satu kebutuhan emosional istri yang penting dipenuhi...", o: ["Diberi perhatian dan dihargai", "Dibiarkan sendiri", "Dipaksa berubah", "Dikritik terus"], a: 0 },
+                    { q: "Cara membangun kepercayaan dalam pernikahan adalah...", o: ["Menyembunyikan masalah", "Komunikasi terbuka, jujur, dan konsisten", "Sering berbohong kecil", "Menjaga jarak"], a: 1 }
+                ], post: [
+                    { q: "Ketika pasangan sedang stres, sikap yang paling tepat adalah...", o: ["Menghakimi", "Mendengarkan dan memberi dukungan emosional", "Menghindar", "Membandingkan dengan orang lain"], a: 1 },
+                    { q: "Faktor utama keharmonisan rumah tangga menurut psikologi adalah...", o: ["Kekayaan", "Keterbukaan, respek, dan kasih sayang yang saling terarah", "Kecantikan/ketampanan", "Status sosial"], a: 1 },
+                    { q: "Yang dimaksud kebutuhan seksual yang sehat dalam pernikahan adalah...", o: ["Hubungan yang didasari kasih sayang dan persetujuan bersama", "Sesuai keinginan satu pihak saja", "Hanya pada malam tertentu", "Dilakukan di luar nikah"], a: 0 }
+                ] },
+            7: { pre: [
+                    { q: "Pola asuh yang paling disarankan bagi perkembangan anak adalah...", o: ["Otoriter penuh paksaan", "Demokratis: tegas, hangat, dan konsisten", "Pemanjaan total", "Tidak peduli"], a: 1 },
+                    { q: "ASI eksklusif yang disarankan diberikan hingga bayi berusia...", o: ["1 bulan", "6 bulan", "1 tahun", "2 tahun"], a: 1 },
+                    { q: "Disiplin pada anak sebaiknya diterapkan dengan cara...", o: ["Kekerasan fisik", "Penjelasan dan konsekuensi yang konsisten tanpa kekerasan", "Mengancam", "Membiarkan"], a: 1 }
+                ], post: [
+                    { q: "Menstimulasi perkembangan anak sejak dini dapat dilakukan dengan...", o: ["Bermain, bercerita, dan memberi kasih sayang", "Memberi gadget berjam-jam", "Membiarkan sendirian", "Membandingkan dengan teman"], a: 0 },
+                    { q: "Tanda anak tumbuh sehat secara emosional adalah...", o: ["Tidak pernah menangis", "Mampu mengungkapkan perasaan dan dekat dengan orang tua", "Selalu menurut tanpa berpikir", "Pendiam"], a: 1 },
+                    { q: "Saat anak melakukan kesalahan, orang tua sebaiknya...", o: ["Memukul agar jera", "Membimbing dengan sabar dan menjelaskan akibatnya", "Mengabaikan", "Memarahi di depan umum"], a: 1 }
+                ] },
+            8: { pre: [
+                    { q: "Peran spiritualitas dalam rumah tangga antara lain...", o: ["Sebagai penenang batin dan pedoman berperilaku", "Hanya ritual seminggu sekali", "Tidak penting", "Membuat aturan kaku"], a: 0 },
+                    { q: "Berbakti kepada orang tua dan mertua termasuk...", o: ["Anjuran yang bisa diabaikan", "Bagian etika berkeluarga yang dianjurkan selama tidak bertentangan dengan syariat", "Hanya untuk orang tua kandung", "Tidak penting"], a: 1 },
+                    { q: "Sikap yang mencerminkan etika berkeluarga yang baik adalah...", o: ["Saling menghargai, menutup aib, dan berkata baik", "Saling membicarakan kekurangan", "Pamer di media sosial", "Menjauhkan mertua"], a: 0 }
+                ], post: [
+                    { q: "Menjaga silaturahmi keluarga besar bermanfaat untuk...", o: ["Menguatkan ikatan keluarga dan saling mendukung", "Menambah beban", "Menimbulkan iri", "Semua salah"], a: 0 },
+                    { q: "Suami/istri dianjurkan berdoa dan beribadah bersama karena...", o: ["Menguatkan ikatan batin dan ketenangan rumah tangga", "Menghabiskan waktu", "Mengikuti tren", "Tidak ada hubungannya"], a: 0 },
+                    { q: "Sikap terhadap perbedaan pendapat antar keluarga adalah...", o: ["Memaksakan kehendak", "Menyelesaikan dengan musyawarah dan saling menghargai", "Membawa ke pengadilan", "Mendiamkan"], a: 1 }
+                ] }
+        };
+
+        function getSoal(sesiNum, tipe) {
+            const b = soalBank[sesiNum];
+            return (b && b[tipe]) ? b[tipe] : [];
+        }
+
+        function renderSoal(containerId, bank) {
+            const c = document.getElementById(containerId);
+            c.innerHTML = '';
+            if (!bank.length) { c.innerHTML = '<p class="text-gray-400 text-center py-6">Soal belum tersedia.</p>'; return; }
+            bank.forEach((s, idx) => {
+                const q = document.createElement('div');
+                q.className = "bg-gray-50 p-4 rounded border";
+                q.innerHTML = `<p class="font-semibold mb-3">${idx + 1}. ${esc(s.q)}</p>` +
+                    s.o.map((opt, oi) =>
+                        `<label class="flex items-center space-x-3 mb-2 cursor-pointer"><input type="radio" name="${containerId}-${idx}" value="${oi}" class="form-radio h-5 w-5 text-teal-600"> <span>${esc(opt)}</span></label>`
+                    ).join('');
+                c.appendChild(q);
+            });
+        }
+
+        function isAllAnswered(containerId, bank) {
+            return bank.every((_, idx) => document.querySelector(`input[name="${containerId}-${idx}"]:checked`));
+        }
+
+        function gradeSoal(containerId, bank) {
+            let benar = 0;
+            bank.forEach((s, idx) => {
+                const sel = document.querySelector(`input[name="${containerId}-${idx}"]:checked`);
+                if (sel && parseInt(sel.value) === s.a) benar++;
+            });
+            return Math.round((benar / bank.length) * 100);
+        }
+
         let state = {
             user: null,
             userSessions: [],   // data perjalanan_sesi milik user
@@ -312,7 +457,7 @@
         // ==================== AUTH ====================
         async function handleLogout() {
             clearInterval(state.timerInterval);
-            await supabase.auth.signOut();
+            await sbClient.auth.signOut();
             state.user = null;
             state.userSessions = [];
             state.profile = {};
@@ -321,16 +466,16 @@
 
         // ==================== PROFIL ====================
         async function upsertProfile(nama) {
-            const { error } = await supabase
+            const { error } = await sbClient
                 .from('profil')
-                .upsert({ user_id: state.user.id, nama: nama || state.profile.nama || 'Peserta' });
+                .upsert({ user_id: state.user.id, nama: nama || state.profile.nama || 'Peserta', email: state.user.email });
             if (error) console.error('upsert profil error:', error.message);
         }
 
         // ==================== LOAD DATA USER ====================
         async function loadUserData() {
             // Profil
-            const { data: prof, error: profErr } = await supabase
+            const { data: prof, error: profErr } = await sbClient
                 .from('profil')
                 .select('*')
                 .eq('user_id', state.user.id)
@@ -339,29 +484,29 @@
                 state.profile = prof;
             } else if (!prof) {
                 const nama = localStorage.getItem('pending_name') || 'Peserta';
-                state.profile = { user_id: state.user.id, nama: nama, jml_sesi: 8, is_admin: false };
+                state.profile = { user_id: state.user.id, nama: nama, email: state.user.email, jml_sesi: 8, is_admin: false };
                 await upsertProfile(nama);
                 localStorage.removeItem('pending_name');
             } else {
-                state.profile = { user_id: state.user.id, nama: 'Peserta', jml_sesi: 8, is_admin: false };
+                state.profile = { user_id: state.user.id, nama: 'Peserta', email: state.user.email, jml_sesi: 8, is_admin: false };
             }
 
             state.isAdmin = !!state.profile.is_admin;
 
             // Muat materi (konten sesi dari DB)
-            const { data: mats } = await supabase.from('materi').select('*');
+            const { data: mats } = await sbClient.from('materi').select('*');
             (mats || []).forEach(m => { state.materi[m.sesi_num] = m; });
 
             // Muat artikel
-            const { data: arts } = await supabase.from('artikel').select('*').order('created_at', { ascending: false });
+            const { data: arts } = await sbClient.from('artikel').select('*').order('created_at', { ascending: false });
             state.artikel = arts || [];
 
             // Muat template sertifikat yang aktif
-            const { data: tpl } = await supabase.from('sertifikat_template').select('*').eq('aktif', true).limit(1).maybeSingle();
+            const { data: tpl } = await sbClient.from('sertifikat_template').select('*').eq('aktif', true).limit(1).maybeSingle();
             state.templateSertif = tpl || null;
 
             // Sessions milik user
-            const { data: sessions, error } = await supabase
+            const { data: sessions, error } = await sbClient
                 .from('perjalanan_sesi')
                 .select('*')
                 .eq('user_id', state.user.id);
@@ -391,6 +536,7 @@
 
         // ==================== NAVIGASI ====================
         function navigate(viewId) {
+            if (isMobile()) closeSidebarMobile();
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
             document.getElementById(viewId).classList.add('active-view');
 
@@ -413,6 +559,7 @@
             state.artikel.forEach(a => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer";
+                card.onclick = () => openArticle(a);
                 card.innerHTML = `
                     ${a.gambar_url ? `<img src="${esc(a.gambar_url)}" class="w-full h-40 object-cover rounded-lg mb-3">` : ''}
                     <span class="text-xs font-bold text-teal-600 bg-teal-100 px-2 py-1 rounded">${esc(a.kategori)}</span>
@@ -420,6 +567,19 @@
                     <p class="text-gray-600 text-sm">${esc(a.isi)}</p>`;
                 grid.appendChild(card);
             });
+        }
+
+        function openArticle(a) {
+            const box = document.getElementById('article-modal-content');
+            box.innerHTML = `
+                <span class="text-xs font-bold text-teal-600 bg-teal-100 px-2 py-1 rounded">${esc(a.kategori)}</span>
+                <h2 class="text-2xl font-bold mt-3 mb-4">${esc(a.judul)}</h2>
+                ${a.gambar_url ? `<img src="${esc(a.gambar_url)}" class="w-full max-h-72 object-cover rounded-xl mb-4">` : ''}
+                <p class="text-gray-700 leading-relaxed whitespace-pre-line">${esc(a.isi)}</p>`;
+            document.getElementById('article-modal').classList.remove('hidden');
+        }
+        function closeArticleModal() {
+            document.getElementById('article-modal').classList.add('hidden');
         }
 
         // ==================== SERTIFIKAT ====================
@@ -566,7 +726,7 @@
             // Pastikan ada baris sesi di DB dengan status 'berjalan'
             const existing = state.userSessions.find(s => s.sesi_num === id);
             if (!existing) {
-                const { data, error } = await supabase
+                const { data, error } = await sbClient
                     .from('perjalanan_sesi')
                     .insert({ user_id: state.user.id, sesi_num: id, sesi_title: judul, status: 'berjalan' })
                     .select()
@@ -575,11 +735,20 @@
             }
             state.activeSessionId = id;
             document.getElementById('pretest-title').innerText = `Pre-Test: Sesi ${id}`;
+            renderSoal('pretest-questions', getSoal(id, 'pre'));
             navigate('pretest-view');
         }
 
         function startMaterial() {
             const id = state.activeSessionId;
+            const bank = getSoal(id, 'pre');
+            if (bank.length && !isAllAnswered('pretest-questions', bank)) {
+                alert("Jawab semua soal pre-test terlebih dahulu.");
+                return;
+            }
+            // Nilai pre-test dihitung dari jawaban (bukan acak)
+            state.preScore = bank.length ? gradeSoal('pretest-questions', bank) : 0;
+
             const m = state.materi[id] || {};
             const judul = m.judul || sessionsData[id-1];
             document.getElementById('material-title').innerText = `Sesi ${id}: ${judul}`;
@@ -598,7 +767,7 @@
             document.getElementById('material-desk').innerText = m.deskripsi || 'Materi komprehensif disediakan di sini. Baca dan pahami sebelum mengerjakan post-test.';
 
             navigate('material-view');
-            runAntiSkipTimer();
+            runAntiSkipTimer(m.mins_watch || 15);
         }
 
         function toEmbedUrl(url) {
@@ -614,7 +783,7 @@
             return `<span class="text-4xl mb-2">▶</span><span>${esc(txt)}</span><span class="text-xs text-gray-400 mt-2">Admin dapat menempel link YouTube di Panel Admin.</span>`;
         }
 
-        function runAntiSkipTimer() {
+        function runAntiSkipTimer(mins) {
             const btn = document.getElementById('btn-posttest');
             const display = document.getElementById('timer-display');
 
@@ -625,8 +794,8 @@
             display.classList.add('text-red-600');
             clearInterval(state.timerInterval);
 
-            // SIMULASI DEMO: 4 detik (di aslinya jadi 15 * 60)
-            let timeRemaining = 4;
+            // Durasi minimum belajar (dalam menit) dari pengaturan admin
+            let timeRemaining = (mins && mins > 0 ? mins : 15) * 60;
 
             const updateDisplay = () => {
                 let m = Math.floor(timeRemaining / 60);
@@ -652,24 +821,30 @@
 
         function startPostTest() {
             document.getElementById('posttest-title').innerText = `Post-Test: Sesi ${state.activeSessionId}`;
+            renderSoal('posttest-questions', getSoal(state.activeSessionId, 'post'));
             navigate('posttest-view');
         }
 
         async function processFinishSession() {
-            // Simulasi nilai acak
-            const randomPre = Math.floor(Math.random() * (70 - 50 + 1)) + 50;
-            const randomPost = Math.floor(Math.random() * (100 - 80 + 1)) + 80;
-
             const id = state.activeSessionId;
+            const bank = getSoal(id, 'post');
+            if (bank.length && !isAllAnswered('posttest-questions', bank)) {
+                alert("Jawab semua soal post-test terlebih dahulu.");
+                return;
+            }
+            // Nilai dihitung dari jawaban, bukan acak
+            const postScore = bank.length ? gradeSoal('posttest-questions', bank) : 80;
+            const preScore = state.preScore;
+
             // Upsert hasil ke DB
-            const { data, error } = await supabase
+            const { data, error } = await sbClient
                 .from('perjalanan_sesi')
                 .upsert({
                     user_id: state.user.id,
                     sesi_num: id,
                     sesi_title: (state.materi[id] && state.materi[id].judul) || sessionsData[id-1],
-                    pre_score: randomPre,
-                    post_score: randomPost,
+                    pre_score: preScore,
+                    post_score: postScore,
                     status: 'selesai',
                     selesai_at: new Date().toISOString()
                 }, { onConflict: 'user_id,sesi_num' })
@@ -694,22 +869,48 @@
             navigate('dashboard-view');
         }
 
+        // ==================== SIDEBAR RESPONSIF ====================
+        function isMobile() { return window.innerWidth < 1024; }
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            if (isMobile()) {
+                const open = sb.classList.toggle('open');
+                document.getElementById('sidebar-backdrop').classList.toggle('show', open);
+            } else {
+                const collapsed = sb.classList.toggle('collapsed');
+                localStorage.setItem('lms_sidebar_collapsed', collapsed ? '1' : '0');
+            }
+        }
+        function closeSidebarMobile() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-backdrop').classList.remove('show');
+        }
+
         // ==================== INIT ====================
         window.onload = async () => {
+            document.getElementById('article-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'article-modal') closeArticleModal();
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeArticleModal(); closeSidebarMobile(); } });
+            if (!isMobile() && localStorage.getItem('lms_sidebar_collapsed') === '1') {
+                document.getElementById('sidebar').classList.add('collapsed');
+            }
             try {
-                supabase = ensureSupabase();
+                sbClient = ensureSupabase();
             } catch (err) {
                 showFatal(err.message);
                 return;
             }
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await sbClient.auth.getSession();
             if (session) {
                 state.user = session.user;
                 await loadUserData();
+                const boot = document.getElementById('boot-screen');
+                if (boot) boot.remove();
                 enterApp();
             } else {
-                // Tidak ada sesi -> arahkan ke halaman login
-                window.location.href = "login.html";
+                // Tidak ada sesi -> arahkan ke halaman login (gate tetap menutup app)
+                window.location.replace("login.html");
             }
         };
     </script>

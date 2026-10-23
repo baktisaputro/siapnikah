@@ -19,6 +19,25 @@
         .spinner { width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .badge-admin { background:#f59e0b; }
+        /* ===== SIDEBAR responsif ===== */
+        #sidebar { transition: width .25s ease, transform .25s ease; }
+        #sidebar.collapsed { width: 4.5rem; }
+        #sidebar.collapsed .side-text { display: none; }
+        #sidebar.collapsed .side-avatar-meta { display: none; }
+        #sidebar.collapsed .side-title { display: none; }
+        #sidebar.collapsed .side-nav { justify-content: center; padding-left: .5rem; padding-right: .5rem; }
+        .side-backdrop { display: none; }
+        #sidebar.open ~ #btn-hamburger { display: none; }
+        @media (max-width: 1023px) {
+            #sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 16rem !important; max-width: 85vw; transform: translateX(-100%); z-index: 60; box-shadow: 2px 0 20px rgba(0,0,0,.35); }
+            #sidebar.open { transform: translateX(0); }
+            #sidebar.collapsed { width: 16rem !important; }
+            #sidebar.collapsed .side-text { display: inline; }
+            #sidebar.collapsed .side-title { display: block; }
+            #sidebar.collapsed .side-avatar-meta { display: block; }
+            #sidebar.collapsed .side-nav { justify-content: flex-start; padding-left: 1rem; padding-right: 1rem; }
+            .side-backdrop.show { display: block; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans flex h-screen overflow-hidden">
@@ -39,23 +58,31 @@
     <div id="panel-view" class="hidden flex h-screen overflow-hidden w-full">
 
         <!-- Sidebar -->
-        <aside class="w-64 bg-gray-900 text-white flex flex-col h-full">
-            <div class="p-6 border-b border-gray-800">
-                <h1 class="text-xl font-bold tracking-wider">🛡️ ADMIN LMS</h1>
-                <p class="text-xs text-gray-400 mt-1" id="admin-name">Admin</p>
+        <aside id="sidebar" class="w-64 bg-gray-900 text-white flex flex-col h-full">
+            <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div class="min-w-0">
+                    <h1 class="side-title text-xl font-bold tracking-wider truncate">🛡️ ADMIN LMS</h1>
+                    <p class="side-avatar-meta text-xs text-gray-400 mt-1 truncate" id="admin-name">Admin</p>
+                </div>
+                <button onclick="toggleSidebar()" id="btn-side-toggle" class="text-gray-400 hover:text-white text-xl leading-none transition" aria-label="Perlebar/ciutkan sidebar">☰</button>
             </div>
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-                <button onclick="showTab('dash')" data-tab="dash" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📊 <span>Dasbor</span></button>
-                <button onclick="showTab('peserta')" data-tab="peserta" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">👥 <span>Peserta</span></button>
-                <button onclick="showTab('materi')" data-tab="materi" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📚 <span>Materi</span></button>
-                <button onclick="showTab('artikel')" data-tab="artikel" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">📝 <span>Artikel</span></button>
-                <button onclick="showTab('sertifikat')" data-tab="sertifikat" class="tabbtn w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">🎓 <span>Template Sertifikat</span></button>
-                <button onclick="location.href='index.html'" class="w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition">👁️ <span>Lihat App Peserta</span></button>
+                <button onclick="showTab('dash')" data-tab="dash" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>📊</span> <span class="side-text">Dasbor</span></button>
+                <button onclick="showTab('peserta')" data-tab="peserta" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>👥</span> <span class="side-text">Peserta</span></button>
+                <button onclick="showTab('lulusan')" data-tab="lulusan" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>🎯</span> <span class="side-text">Kelulusan</span></button>
+                <button onclick="showTab('materi')" data-tab="materi" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>📚</span> <span class="side-text">Materi</span></button>
+                <button onclick="showTab('artikel')" data-tab="artikel" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>📝</span> <span class="side-text">Artikel</span></button>
+                <button onclick="showTab('sertifikat')" data-tab="sertifikat" class="tabbtn side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition"><span>🎓</span> <span class="side-text">Template Sertifikat</span></button>
+                <button onclick="location.href='index.html'" class="side-nav w-full text-left px-4 py-2.5 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition mt-2"><span>👁️</span> <span class="side-text">Lihat App Peserta</span></button>
             </nav>
             <div class="p-4 border-t border-gray-800">
-                <button onclick="handleLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-bold transition">Keluar</button>
+                <button onclick="handleLogout()" class="side-nav w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"><span>⏻</span><span class="side-text">Keluar</span></button>
             </div>
         </aside>
+
+        <!-- Backdrop + Hamburger (mobile) -->
+        <div id="sidebar-backdrop" onclick="closeSidebarMobile()" class="side-backdrop fixed inset-0 bg-black/40 z-[55]"></div>
+        <button id="btn-hamburger" onclick="toggleSidebar()" class="lg:hidden fixed top-3 left-3 z-[70] bg-gray-900 text-white w-11 h-11 rounded-xl shadow-lg flex items-center justify-center text-xl" aria-label="Buka menu">☰</button>
 
         <!-- Konten -->
         <main class="flex-1 h-full overflow-y-auto p-8">
@@ -98,6 +125,32 @@
                             <th class="p-3 text-center">Aksi</th>
                         </tr></thead>
                         <tbody id="tbl-peserta"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- KELULUSAN -->
+            <section id="pane-lulusan" class="tabpane">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold">Status Kelulusan Peserta</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-4">Nilai <strong>post-test</strong> tiap sesi (min. lulus <strong>80</strong>). Peserta <strong>SIAP NIKAH</strong> bila menyelesaikan 8 sesi dengan rata-rata ≥ 80.</p>
+                <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead><tr class="bg-gray-50 border-b">
+                            <th class="p-3">Nama</th>
+                            <th class="p-3">Email</th>
+                            <th class="p-3 text-center">S1</th>
+                            <th class="p-3 text-center">S2</th>
+                            <th class="p-3 text-center">S3</th>
+                            <th class="p-3 text-center">S4</th>
+                            <th class="p-3 text-center">S5</th>
+                            <th class="p-3 text-center">S6</th>
+                            <th class="p-3 text-center">S7</th>
+                            <th class="p-3 text-center">S8</th>
+                            <th class="p-3 text-center">Status</th>
+                        </tr></thead>
+                        <tbody id="tbl-lulusan"></tbody>
                     </table>
                 </div>
             </section>
@@ -156,27 +209,48 @@
     </div>
 
     <script>
-        let supabase = null;
+        let sbClient = null;
         let adminEmail = null;
+
+        // ============ SIDEBAR RESPONSIF ============
+        function isMobile() { return window.innerWidth < 1024; }
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            if (isMobile()) {
+                const open = sb.classList.toggle('open');
+                document.getElementById('sidebar-backdrop').classList.toggle('show', open);
+            } else {
+                const collapsed = sb.classList.toggle('collapsed');
+                localStorage.setItem('lms_admin_sidebar_collapsed', collapsed ? '1' : '0');
+            }
+        }
+        function closeSidebarMobile() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-backdrop').classList.remove('show');
+        }
 
         // ============ GATE / AUTH ============
         async function init() {
             try {
                 if (!window.supabase) throw new Error("Library Supabase tidak termuat. Periksa koneksi/pemblokir iklan.");
-                supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+                sbClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
             } catch (err) {
                 rejectAccess(err.message);
                 return;
             }
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await sbClient.auth.getSession();
             if (!session) { rejectAccess("Silakan masuk dulu."); return; }
             // cek is_admin
-            const { data: prof, error } = await supabase.from('profil').select('*').eq('user_id', session.user.id).maybeSingle();
+            const { data: prof, error } = await sbClient.from('profil').select('*').eq('user_id', session.user.id).maybeSingle();
             if (error || !prof || !prof.is_admin) { rejectAccess("Akses ditolak. Anda bukan admin."); return; }
             adminEmail = session.user.email;
             document.getElementById('admin-name').innerText = prof.nama + " (Admin)";
             document.getElementById('gate-view').classList.add('hidden');
             document.getElementById('panel-view').classList.remove('hidden');
+            if (!isMobile() && localStorage.getItem('lms_admin_sidebar_collapsed') === '1') {
+                document.getElementById('sidebar').classList.add('collapsed');
+            }
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebarMobile(); });
             loadAll();
         }
 
@@ -190,7 +264,7 @@
         }
 
         async function handleLogout() {
-            await supabase.auth.signOut();
+            await sbClient.auth.signOut();
             location.href = "login.html";
         }
 
@@ -204,11 +278,12 @@
         }
 
         // ============ LOAD ALL ============
-        async function loadAll() { loadTab('dash'); loadTab('peserta'); loadTab('artikel'); loadTab('materi'); loadTab('sertifikat'); }
+        async function loadAll() { loadTab('dash'); loadTab('peserta'); loadTab('lulusan'); loadTab('artikel'); loadTab('materi'); loadTab('sertifikat'); }
 
         async function loadTab(name) {
             if (name==='dash') loadDash();
             if (name==='peserta') loadPeserta();
+            if (name==='lulusan') loadKelulusan();
             if (name==='artikel') loadArtikelList();
             if (name==='materi') loadMateri();
             if (name==='sertifikat') loadTemplate();
@@ -216,29 +291,29 @@
 
         // ============ DASH ============
         async function loadDash() {
-            const { count: cProf } = await supabase.from('profil').select('*', { count: 'exact', head: true });
+            const { count: cProf } = await sbClient.from('profil').select('*', { count: 'exact', head: true });
             document.getElementById('stat-peserta').innerText = cProf ?? 0;
-            const { data: sesi } = await supabase.from('perjalanan_sesi').select('*').eq('status','selesai');
+            const { data: sesi } = await sbClient.from('perjalanan_sesi').select('*').eq('status','selesai');
             document.getElementById('stat-selesai').innerText = sesi ? sesi.length : 0;
-            const { count: cArt } = await supabase.from('artikel').select('*', { count: 'exact', head: true });
+            const { count: cArt } = await sbClient.from('artikel').select('*', { count: 'exact', head: true });
             document.getElementById('stat-artikel').innerText = cArt ?? 0;
-            const { data: tpl } = await supabase.from('sertifikat_template').select('*').eq('aktif', true);
+            const { data: tpl } = await sbClient.from('sertifikat_template').select('*').eq('aktif', true);
             document.getElementById('stat-sertif').innerText = tpl ? tpl.length : 0;
         }
 
         // ============ PESERTA ============
         async function loadPeserta() {
-            const { data: list } = await supabase.from('profil').select('*');
+            const { data: list } = await sbClient.from('profil').select('*');
             const tbody = document.getElementById('tbl-peserta');
             tbody.innerHTML = '';
             if (!list || list.length===0) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada peserta.</td></tr>'; return; }
             for (const p of list) {
-                const { count: selesai } = await supabase.from('perjalanan_sesi').select('*', { count:'exact', head:true }).eq('user_id', p.user_id).eq('status','selesai');
+                const { count: selesai } = await sbClient.from('perjalanan_sesi').select('*', { count:'exact', head:true }).eq('user_id', p.user_id).eq('status','selesai');
                 const tr = document.createElement('tr');
                 tr.className = "border-b hover:bg-gray-50";
                 tr.innerHTML = `
                     <td class="p-3 font-semibold">${esc(p.nama)}</td>
-                    <td class="p-3 text-gray-500">${esc(p.user_id)}</td>
+                    <td class="p-3 text-gray-500">${esc(p.email || ('ID: ' + (p.user_id||'').slice(0,8)))}</td>
                     <td class="p-3 text-center">${selesai}/8</td>
                     <td class="p-3 text-center">${p.is_admin ? '<span class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700">ADMIN</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500">peserta</span>'}</td>
                     <td class="p-3 text-center space-x-2">
@@ -255,10 +330,10 @@
             const pass = document.getElementById('np-pass').value;
             const msg = document.getElementById('np-msg');
             if (!nama || !email || !pass) { msg.className = "mt-3 text-sm font-semibold text-red-600"; msg.innerText = "Lengkapi semua field."; return; }
-            const { data, error } = await supabase.auth.signUp({ email, password: pass });
+            const { data, error } = await sbClient.auth.signUp({ email, password: pass });
             if (error) { msg.className="mt-3 text-sm font-semibold text-red-600"; msg.innerText = error.message; return; }
             // buat profil
-            await supabase.from('profil').upsert({ user_id: data.user.id, nama: nama });
+            await sbClient.from('profil').upsert({ user_id: data.user.id, nama: nama, email: email });
             msg.className = "mt-3 text-sm font-semibold text-green-600";
             msg.innerText = "Peserta " + nama + " berhasil dibuat.";
             document.getElementById('np-nama').value=''; document.getElementById('np-email').value=''; document.getElementById('np-pass').value='';
@@ -266,24 +341,63 @@
         }
 
         async function toggleAdmin(uid, val) {
-            await supabase.from('profil').update({ is_admin: val }).eq('user_id', uid);
+            await sbClient.from('profil').update({ is_admin: val }).eq('user_id', uid);
             loadPeserta(); loadDash();
         }
 
         async function hapusPeserta(uid) {
             if (!confirm("Hapus peserta ini? Akun pengguna juga akan dihapus.")) return;
             // hapus baris profil & sesi lalu user
-            await supabase.from('perjalanan_sesi').delete().eq('user_id', uid);
-            await supabase.from('profil').delete().eq('user_id', uid);
+            await sbClient.from('perjalanan_sesi').delete().eq('user_id', uid);
+            await sbClient.from('profil').delete().eq('user_id', uid);
             if (confirm("Profil & progres terhapus. Lanjut hapus akun auth (perlu izin admin Supabase)?")) {
                 alert("Penghapusan akun auth butuh Data API/Management. Hapus manual di Supabase > Authentication > Users jika perlu.");
             }
             loadPeserta(); loadDash();
         }
 
+        // ============ KELULUSAN ============
+        async function loadKelulusan() {
+            const { data: profs } = await sbClient.from('profil').select('*');
+            const { data: sesi } = await sbClient.from('perjalanan_sesi').select('*');
+            const tbody = document.getElementById('tbl-lulusan');
+            tbody.innerHTML = '';
+            if (!profs || profs.length===0){ tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-400">Belum ada peserta.</td></tr>'; return; }
+            const map = {};
+            (sesi||[]).forEach(s => {
+                if (!map[s.user_id]) map[s.user_id] = {};
+                map[s.user_id][s.sesi_num] = s;
+            });
+            (profs||[]).forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                let cells = `<td class="p-3 font-semibold">${esc(p.nama)}</td><td class="p-3 text-gray-500">${esc(p.email || ('ID: ' + (p.user_id||'').slice(0,8)))}</td>`;
+                let doneAll = true, sum = 0;
+                for (let i=1;i<=8;i++){
+                    const s = (map[p.user_id]||{})[i];
+                    if (s && s.status==='selesai' && s.post_score!=null){
+                        const lulus = s.post_score>=80;
+                        sum += s.post_score;
+                        cells += `<td class="p-3 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-xs font-bold ${lulus ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${s.post_score}${lulus?'✓':''}</span></td>`;
+                    } else {
+                        doneAll = false;
+                        cells += `<td class="p-3 text-center text-gray-300">–</td>`;
+                    }
+                }
+                const ready = doneAll && (sum/8)>=80;
+                let status, color;
+                if (doneAll && ready) { status = "SIAP NIKAH"; color = "bg-green-600 text-white"; }
+                else if (doneAll) { status = "LULUS BERSYARAT"; color = "bg-yellow-500 text-white"; }
+                else { status = "BELUM SELESAI"; color = "bg-gray-200 text-gray-600"; }
+                cells += `<td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-bold ${color}">${status}</span></td>`;
+                tr.innerHTML = cells;
+                tbody.appendChild(tr);
+            });
+        }
+
         // ============ MATERI ============
         async function loadMateri() {
-            const { data: list } = await supabase.from('materi').select('*').order('sesi_num');
+            const { data: list } = await sbClient.from('materi').select('*').order('sesi_num');
             const map = {}; (list||[]).forEach(m => map[m.sesi_num] = m);
             const container = document.getElementById('materi-list');
             container.innerHTML = '';
@@ -312,7 +426,7 @@
             const desk = document.getElementById('mat-desk-'+i).value.trim();
             const mins = parseInt(document.getElementById('mat-mins-'+i).value)||15;
             const aktif = document.getElementById('mat-aktif-'+i).checked;
-            const { error } = await supabase.from('materi').upsert({
+            const { error } = await sbClient.from('materi').upsert({
                 sesi_num: i, judul: judul||("Sesi "+i), video_url: video||null, deskripsi: desk, mins_watch: mins, aktif: aktif
             }, { onConflict: 'sesi_num' });
             alert(error ? "Gagal: " + error.message : "Materi Sesi "+i+" tersimpan.");
@@ -320,7 +434,7 @@
 
         // ============ ARTIKEL ============
         async function loadArtikelList() {
-            const { data: list } = await supabase.from('artikel').select('*').order('created_at', {ascending:false});
+            const { data: list } = await sbClient.from('artikel').select('*').order('created_at', {ascending:false});
             const tbody = document.getElementById('tbl-artikel');
             tbody.innerHTML = '';
             if (!list || list.length===0){ tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400">Belum ada artikel.</td></tr>'; return; }
@@ -348,8 +462,8 @@
             if (file) gambar_url = await fileToDataUrl(file);
             const payload = { judul, kategori, isi, ...(gambar_url?{gambar_url}:{}) };
             const { error } = id
-                ? await supabase.from('artikel').update(payload).eq('id', id)
-                : await supabase.from('artikel').insert(payload);
+                ? await sbClient.from('artikel').update(payload).eq('id', id)
+                : await sbClient.from('artikel').insert(payload);
             msg.className = "mt-2 text-sm font-semibold " + (error ? "text-red-600":"text-green-600");
             msg.innerText = error ? "Gagal: "+error.message : "Artikel tersimpan.";
             if (!error) resetArtikelForm();
@@ -357,19 +471,19 @@
         }
 
         function editArtikel(id) {
-            supabase.from('artikel').select('*').eq('id', id).single().then(({data}) => {
+            sbClient.from('artikel').select('*').eq('id', id).single().then(({data}) => {
                 document.getElementById('art-id').value = data.id;
                 document.getElementById('art-judul').value = data.judul;
                 document.getElementById('art-kategori').value = data.kategori;
                 document.getElementById('art-isi').value = data.isi;
             });
         }
-        async function hapusArtikel(id){ await supabase.from('artikel').delete().eq('id',id); loadArtikelList(); loadDash(); }
+        async function hapusArtikel(id){ await sbClient.from('artikel').delete().eq('id',id); loadArtikelList(); loadDash(); }
         function resetArtikelForm(){ ['art-id','art-judul','art-kategori','art-isi'].forEach(i=>document.getElementById(i).value=''); document.getElementById('art-gambar').value=''; }
 
         // ============ TEMPLATE SERTIFIKAT ============
         async function loadTemplate() {
-            const { data: list } = await supabase.from('sertifikat_template').select('*').order('created_at',{ascending:false});
+            const { data: list } = await sbClient.from('sertifikat_template').select('*').order('created_at',{ascending:false});
             const box = document.getElementById('tpl-list');
             box.innerHTML = '';
             if (!list || list.length===0){ box.innerHTML = '<p class="text-gray-400 col-span-3 text-center py-8">Belum ada template. Upload di atas.</p>'; return; }
@@ -395,7 +509,7 @@
             const msg = document.getElementById('sf-msg');
             if (!nama || !file) { msg.className="mt-3 text-sm font-semibold text-red-600"; msg.innerText="Isi nama & pilih gambar."; return; }
             const dataUrl = await fileToDataUrl(file);
-            const { error } = await supabase.from('sertifikat_template').insert({ nama, gambar_url: dataUrl });
+            const { error } = await sbClient.from('sertifikat_template').insert({ nama, gambar_url: dataUrl });
             msg.className = "mt-3 text-sm font-semibold " + (error ? "text-red-600":"text-green-600");
             msg.innerText = error ? "Gagal: "+error.message : "Template diupload. Aktifkan untuk dipakai.";
             if (!error){ document.getElementById('sf-nama').value=''; document.getElementById('sf-file').value=''; }
@@ -404,11 +518,11 @@
 
         async function setAktifTemplate(id) {
             // nonaktifkan semua dulu lalu aktifkan id
-            await supabase.from('sertifikat_template').update({ aktif: false }).neq('id', id);
-            await supabase.from('sertifikat_template').update({ aktif: true }).eq('id', id);
+            await sbClient.from('sertifikat_template').update({ aktif: false }).neq('id', id);
+            await sbClient.from('sertifikat_template').update({ aktif: true }).eq('id', id);
             loadTemplate(); loadDash();
         }
-        async function hapusTemplate(id){ if(!confirm("Hapus template?"))return; await supabase.from('sertifikat_template').delete().eq('id',id); loadTemplate(); loadDash(); }
+        async function hapusTemplate(id){ if(!confirm("Hapus template?"))return; await sbClient.from('sertifikat_template').delete().eq('id',id); loadTemplate(); loadDash(); }
 
         // ============ UTIL ============
         function fileToDataUrl(file) {
